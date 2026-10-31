@@ -47,6 +47,12 @@ ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
 - **Subtarefas:** tarefa filha (um nível só) e checklist simples dentro da tarefa.
 - **Disciplinas são diferentes de projetos** (fases futuras).
 - **Gamificação leve:** streaks e estatísticas. Nada de XP, cartas ou mundo.
+- **Idioma da CLI:** comandos e flags em inglês; tudo o que aparece na tela
+  (mensagens, erros, ajuda) em português.
+- **Biblioteca de CLI:** pacote `flag` da biblioteca padrão, com os subcomandos
+  tratados à mão.
+- **Idioma do código:** nomes de pacotes, tipos, funções, tabelas e colunas em
+  inglês. Comentários e documentação em português.
 
 ## 4. Escopo do v0.1
 
@@ -167,24 +173,27 @@ pelo próprio neivi.
 
 ## 8. Modelo de dados (rascunho)
 
+Nomes de tabelas e colunas em inglês, como no código.
+
 ```
-tarefas
-  id INTEGER PK, titulo TEXT, prioridade TEXT NULL ('A'|'B'|'C'),
-  prazo DATE NULL, estimativa_min INTEGER NULL,
-  parent_id INTEGER NULL -> tarefas.id   (um nível só)
+tasks
+  id INTEGER PK, title TEXT, priority TEXT NULL ('A'|'B'|'C'),
+  due DATE NULL, estimate_min INTEGER NULL,
+  parent_id INTEGER NULL -> tasks.id     (um nível só)
   extras TEXT NULL                       (chaves desconhecidas, como vieram)
-  criada_em DATETIME, concluida_em DATETIME NULL
+  created_at DATETIME, done_at DATETIME NULL
 
-tarefa_tags      (tarefa_id, tag)        -- +fac.BD
-tarefa_contextos (tarefa_id, contexto)   -- @pc
-checklist_itens  (id, tarefa_id, texto, feito BOOL, ordem INTEGER)
+task_tags        (task_id, tag)          -- +fac.BD
+task_contexts    (task_id, context)      -- @pc
+checklist_items  (id, task_id, text, done BOOL, position INTEGER)
 
-habitos
-  id, nome, tipo ('bool'|'quantidade'), meta INTEGER NULL,
-  freq_tipo ('diario'|'x_por_semana'|'dias'), freq_valor TEXT,
-  folga INTEGER, criado_em, arquivado BOOL
+habits
+  id, name, kind ('bool'|'count'), goal INTEGER NULL,
+  freq_kind ('daily'|'times_per_week'|'weekdays'), freq_value TEXT,
+  slack INTEGER, created_at, archived BOOL
+  -- slack: dias de folga sem zerar a sequência
 
-habito_registros (habito_id, data DATE, valor INTEGER)  -- PK(habito_id, data)
+habit_logs (habit_id, date DATE, value INTEGER)  -- PK(habit_id, date)
 ```
 
 ## 9. Estrutura do repositório
@@ -192,8 +201,8 @@ habito_registros (habito_id, data DATE, valor INTEGER)  -- PK(habito_id, data)
 ```
 neivi/
   cmd/neivi/main.go      ponto de entrada
-  internal/tarefa/       struct Tarefa + regras (atrasada, concluir...)
-  internal/habito/       struct Habito + cálculo de streak com folga
+  internal/task/         struct Task + regras (atrasada, concluir...)
+  internal/habit/        struct Habit + cálculo de streak com folga
   internal/todotxt/      parser da sintaxe e exportação
   internal/store/        acesso ao SQLite (única camada que fala SQL)
   internal/cli/          comandos; só chamam o núcleo e imprimem
@@ -241,8 +250,6 @@ plano.
 
 | Assunto | Situação | Quando decidir |
 |---|---|---|
-| Comandos da CLI | Nomes (português ou inglês), subcomandos, flags | M2 |
-| Biblioteca de CLI | `cobra` ou o pacote `flag` da biblioteca padrão (vale entender o `flag` primeiro) | M2 |
 | Atalhos de data em `due:` | `hoje`, `amanha`, `seg`…`dom`: v0.1 ou depois | M3 |
 | Importar o done.txt | Traz histórico antigo para as estatísticas; custo é tratar linhas antigas mal formadas | M8 |
 | Licença | Sem licença (todos os direitos reservados) ou MIT | M1 |
