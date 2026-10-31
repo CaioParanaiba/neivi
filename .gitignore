@@ -1,0 +1,12 @@
+# arquivos locais, fora do repositório
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+
+# binário
+/neivi
+
+# dados locais de teste
+*.db
+*.db-wal
+*.db-shm
