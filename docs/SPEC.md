@@ -51,8 +51,8 @@ ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
   v0.4.
 - **Sintaxe própria, não a do todo.txt:** símbolo para o que é cadastrado
   (`@` disciplina, `+` projeto); chave para características da tarefa (`pri:`,
-  `due:`, `est:`, `ctx:`). Tudo em qualquer posição da linha. Sem tags livres:
-  só disciplinas, projetos e contextos cadastrados.
+  `due:`, `est:`). Tudo em qualquer posição da linha. Sem tags livres e sem
+  contextos: só disciplinas e projetos cadastrados.
 - **Gamificação leve:** streaks e estatísticas. Nada de XP, cartas ou mundo.
 - **Idioma da CLI:** comandos e flags em inglês; tudo o que aparece na tela
   (mensagens, erros, ajuda) em português.
@@ -69,7 +69,7 @@ com hábitos, e tem backup diário funcionando.
 ### 4.1 Tarefas
 
 - Campos: título; prioridade A/B/C (opcional); prazo (opcional); disciplina
-  (opcional); projeto (opcional); contextos; estimativa em minutos (opcional);
+  (opcional); projeto (opcional); estimativa em minutos (opcional);
   datas de criação e de conclusão.
 - A data de conclusão é salva desde o v0.1, porque o histórico e as estatísticas
   das fases futuras dependem dela.
@@ -79,8 +79,8 @@ com hábitos, e tem backup diário funcionando.
 - **Entrada:** o título primeiro, as marcas em qualquer posição:
 
   ```
-  revisar normalização @BD pri:A due:05/11 est:30m ctx:pc
-  escrever o parser +neivi est:1h ctx:pc
+  revisar normalização @BD pri:A due:05/11 est:30m
+  escrever o parser +neivi est:1h
   ```
 
   | Marca | Significado |
@@ -90,9 +90,8 @@ com hábitos, e tem backup diário funcionando.
   | `pri:A` | prioridade A, B ou C |
   | `due:05/11/26` | prazo |
   | `est:30m` | estimativa |
-  | `ctx:pc` | contexto (cadastrado); pode haver mais de um |
 
-- Disciplina, projeto ou contexto que não existe é erro, com a sugestão de
+- Disciplina ou projeto que não existe é erro, com a sugestão de
   cadastrar. Protege contra erro de digitação.
 - **Datas de entrada** no formato `dd/mm/aa`, aceitando `/` e `-`. Ano com dois
   dígitos (`26` → `2026`). Sem ano (`05/11`), vale a próxima ocorrência da data.
@@ -137,8 +136,8 @@ com hábitos, e tem backup diário funcionando.
   | `pri:A` | `(A)` no começo da linha |
   | `@BD` | `+fac.BD` |
   | `+neivi` | `+neivi` |
-  | `ctx:pc` | `@pc` |
   | prazo | `due:2026-11-05` (ISO) |
+  | (guardado em `extras`) | `@pc` e outros contextos do Ganbatte |
 
   A exportação converte da esquerda para a direita; a importação, da direita
   para a esquerda.
@@ -148,9 +147,9 @@ com hábitos, e tem backup diário funcionando.
 Os nomes dos comandos e a forma de usar a CLI ainda não foram definidos (seção
 13). O que a CLI precisa permitir:
 
-- Cadastrar e listar disciplinas, projetos e contextos (só o nome).
+- Cadastrar e listar disciplinas e projetos (só o nome).
 - Criar tarefa a partir de uma linha na sintaxe do neivi.
-- Listar tarefas com filtros (disciplina, projeto, contexto, sem disciplina e
+- Listar tarefas com filtros (disciplina, projeto, sem disciplina e
   sem projeto, atrasadas); por padrão só as pendentes.
 - Ver o dia (seção 4.2).
 - Concluir e reabrir.
@@ -217,19 +216,18 @@ Nomes de tabelas e colunas em inglês, como no código.
 ```
 subjects  (id, name UNIQUE)               -- disciplinas: @BD
 projects  (id, name UNIQUE)               -- projetos: +neivi
-contexts  (id, name UNIQUE)               -- contextos: ctx:pc
 
 tasks
   id INTEGER PK AUTOINCREMENT, title TEXT, priority TEXT NULL ('A'|'B'|'C'),
   due TEXT NULL (ISO), estimate_min INTEGER NULL,
-  subject_id INTEGER NULL -> subjects.id
-  project_id INTEGER NULL -> projects.id
-  parent_id INTEGER NULL -> tasks.id     (um nível só)
-  extras TEXT NULL                       (chaves desconhecidas, como vieram)
+  subject_id INTEGER NULL -> subjects.id   (apagar a disciplina é bloqueado)
+  project_id INTEGER NULL -> projects.id   (idem)
+  parent_id INTEGER NULL -> tasks.id       (um nível só; apagar a mãe é bloqueado)
+  extras TEXT NULL                         (chaves desconhecidas, como vieram)
   created_at TEXT (ISO), done_at TEXT NULL (ISO)
 
-task_contexts    (task_id, context_id)   -- N:N, PK(task_id, context_id)
-checklist_items  (id, task_id, text, done BOOL, position INTEGER)
+checklist_items  (id, task_id, text, done INTEGER 0/1, position INTEGER)
+  -- task_id com ON DELETE CASCADE: some junto com a tarefa
 
 habits
   id, name, kind ('bool'|'count'), goal INTEGER NULL,
@@ -263,9 +261,9 @@ Marcos pequenos, um ou mais commits cada.
 - **M2.** Definir os nomes dos comandos. Store: abrir o banco, aplicar
   migração, inserir e listar tarefas. Primeiros comandos de criar e listar, com
   título só.
-- **M3.** Cadastro de disciplinas, projetos e contextos. Parser da sintaxe do
-  neivi (`@disciplina`, `+projeto`, `pri:`, `due:` com datas `dd/mm/aa`, `est:`,
-  `ctx:`, chaves extras) com testes (`go test`).
+- **M3.** Cadastro de disciplinas e projetos. Parser da sintaxe do neivi
+  (`@disciplina`, `+projeto`, `pri:`, `due:` com datas `dd/mm/aa`, `est:`,
+  chaves extras) com testes (`go test`).
 - **M4.** Concluir, reabrir, remover e editar.
 - **M5.** Filtros da listagem e visão do dia com ordenação.
 - **M6.** Tarefas filhas e checklist.
@@ -312,10 +310,11 @@ mesma discussão.
   `pri:`. O `(A)` existe só na conversão com o todo.txt.
 - **`+fac.BD` para disciplina:** era um projeto fantasiado de disciplina.
   Disciplina virou entidade, marcada com `@`.
-- **`@` para contexto:** o símbolo ficou para disciplina; contexto é
-  característica da tarefa e virou `ctx:`.
-- **Tags livres:** sem uso claro além de disciplina, projeto e contexto. Voltam
-  se fizerem falta.
+- **Contextos (`@pc`, `@caderno`):** quase toda tarefa tinha o mesmo contexto,
+  então não filtravam nada. Voltam (como `ctx:`) se fizerem falta. O `@` ficou
+  para disciplina.
+- **Tags livres:** sem uso claro além de disciplina e projeto. Voltam se fizerem
+  falta.
 - **todo.txt como fonte da verdade:** não guarda bem filhas, checklist, hábitos
   e histórico; virou só exportação.
 - **Inbox separada:** obriga a esvaziar; "sem disciplina e sem projeto" é um
