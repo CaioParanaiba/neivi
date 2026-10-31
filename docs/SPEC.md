@@ -42,10 +42,17 @@ ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
 - **Onde roda:** no PC (Arch Linux). Servidor em casa e celular só no v1.0.
 - **Dados:** SQLite é a fonte da verdade. O todo.txt é gerado a partir do banco
   (exportação de mão única) e nunca é lido de volta, exceto na importação.
-- **Sem inbox separada:** tudo fica na lista geral; "sem tag" é um filtro.
+- **Sem inbox separada:** tudo fica na lista geral; "sem disciplina e sem
+  projeto" é um filtro.
 - **Prioridade:** A/B/C internamente. O rótulo exibido é só um mapeamento.
 - **Subtarefas:** tarefa filha (um nível só) e checklist simples dentro da tarefa.
-- **Disciplinas são diferentes de projetos** (fases futuras).
+- **Disciplinas e projetos são entidades** com tabela própria desde o v0.1 (só o
+  nome). Os detalhes (professor, avaliações, status, pasta) vêm no v0.3 e no
+  v0.4.
+- **Sintaxe própria, não a do todo.txt:** símbolo para o que é cadastrado
+  (`@` disciplina, `+` projeto); chave para características da tarefa (`pri:`,
+  `due:`, `est:`, `ctx:`). Tudo em qualquer posição da linha. Sem tags livres:
+  só disciplinas, projetos e contextos cadastrados.
 - **Gamificação leve:** streaks e estatísticas. Nada de XP, cartas ou mundo.
 - **Idioma da CLI:** comandos e flags em inglês; tudo o que aparece na tela
   (mensagens, erros, ajuda) em português.
@@ -61,24 +68,42 @@ com hábitos, e tem backup diário funcionando.
 
 ### 4.1 Tarefas
 
-- Campos: título; prioridade A/B/C (opcional); prazo (opcional); tags de projeto
-  ou disciplina (`+fac.BD`); contextos (`@pc`); estimativa em minutos
-  (opcional); datas de criação e de conclusão.
+- Campos: título; prioridade A/B/C (opcional); prazo (opcional); disciplina
+  (opcional); projeto (opcional); contextos; estimativa em minutos (opcional);
+  datas de criação e de conclusão.
 - A data de conclusão é salva desde o v0.1, porque o histórico e as estatísticas
   das fases futuras dependem dela.
 - **Tarefa filha:** uma tarefa com `parent_id`. Um nível só.
 - **Checklist:** itens de texto dentro da tarefa, cada um marcado ou não, sem
   prazo próprio.
-- **Entrada** na sintaxe do todo.txt, mais duas chaves (`due:` e `est:`):
+- **Entrada:** o título primeiro, as marcas em qualquer posição:
 
   ```
-  (A) revisar normalização +fac.BD @pc due:2026-11-05 est:30m
+  revisar normalização @BD pri:A due:05/11 est:30m ctx:pc
+  escrever o parser +neivi est:1h ctx:pc
   ```
 
+  | Marca | Significado |
+  |---|---|
+  | `@BD` | disciplina (cadastrada) |
+  | `+neivi` | projeto (cadastrado) |
+  | `pri:A` | prioridade A, B ou C |
+  | `due:05/11/26` | prazo |
+  | `est:30m` | estimativa |
+  | `ctx:pc` | contexto (cadastrado); pode haver mais de um |
+
+- Disciplina, projeto ou contexto que não existe é erro, com a sugestão de
+  cadastrar. Protege contra erro de digitação.
+- **Datas de entrada** no formato `dd/mm/aa`, aceitando `/` e `-`. Ano com dois
+  dígitos (`26` → `2026`). Sem ano (`05/11`), vale a próxima ocorrência da data.
+  No banco e no export, sempre ISO (`2026-11-05`). Na tela, `dd/mm`.
 - `est:` aceita minutos e horas: `30m`, `1h`, `1h15`, `90`. Guardado em minutos.
 - **Chaves desconhecidas** (`chave:valor` que o neivi não usa, como `rep:`,
   `top:`, `aula:`, `av:`) são guardadas como texto e voltam iguais na
   exportação. Nada se perde na importação.
+- **Aspas opcionais:** o texto depois do comando é juntado com espaços. No zsh,
+  o alias `alias neivi='noglob neivi'` deixa `?` e `*` passarem sem aspas; aspas
+  só para caracteres como `(`, `)`, `'`, `&`, `;`.
 - Opcional no v0.1: atalhos de data em `due:` (`hoje`, `amanha`, `seg`…`dom`).
   Se complicar, fica para depois.
 
@@ -104,15 +129,29 @@ com hábitos, e tem backup diário funcionando.
   na migração inicial e, durante a transição, para trazer tarefas novas criadas
   fora do neivi.
 - Não existe sincronização automática nos dois sentidos.
+- **Conversões** entre a sintaxe do neivi e a do todo.txt (que o Ganbatte e a
+  automação da manhã leem):
+
+  | neivi | todo.txt |
+  |---|---|
+  | `pri:A` | `(A)` no começo da linha |
+  | `@BD` | `+fac.BD` |
+  | `+neivi` | `+neivi` |
+  | `ctx:pc` | `@pc` |
+  | prazo | `due:2026-11-05` (ISO) |
+
+  A exportação converte da esquerda para a direita; a importação, da direita
+  para a esquerda.
 
 ## 5. Operações do v0.1
 
 Os nomes dos comandos e a forma de usar a CLI ainda não foram definidos (seção
 13). O que a CLI precisa permitir:
 
-- Criar tarefa a partir de uma linha na sintaxe do todo.txt.
-- Listar tarefas com filtros (tag, contexto, sem tag, atrasadas); por padrão só
-  as pendentes.
+- Cadastrar e listar disciplinas, projetos e contextos (só o nome).
+- Criar tarefa a partir de uma linha na sintaxe do neivi.
+- Listar tarefas com filtros (disciplina, projeto, contexto, sem disciplina e
+  sem projeto, atrasadas); por padrão só as pendentes.
 - Ver o dia (seção 4.2).
 - Concluir e reabrir.
 - Editar a partir de um novo texto, mantendo filhas e checklist.
@@ -176,15 +215,20 @@ pelo próprio neivi.
 Nomes de tabelas e colunas em inglês, como no código.
 
 ```
+subjects  (id, name UNIQUE)               -- disciplinas: @BD
+projects  (id, name UNIQUE)               -- projetos: +neivi
+contexts  (id, name UNIQUE)               -- contextos: ctx:pc
+
 tasks
-  id INTEGER PK, title TEXT, priority TEXT NULL ('A'|'B'|'C'),
-  due DATE NULL, estimate_min INTEGER NULL,
+  id INTEGER PK AUTOINCREMENT, title TEXT, priority TEXT NULL ('A'|'B'|'C'),
+  due TEXT NULL (ISO), estimate_min INTEGER NULL,
+  subject_id INTEGER NULL -> subjects.id
+  project_id INTEGER NULL -> projects.id
   parent_id INTEGER NULL -> tasks.id     (um nível só)
   extras TEXT NULL                       (chaves desconhecidas, como vieram)
-  created_at DATETIME, done_at DATETIME NULL
+  created_at TEXT (ISO), done_at TEXT NULL (ISO)
 
-task_tags        (task_id, tag)          -- +fac.BD
-task_contexts    (task_id, context)      -- @pc
+task_contexts    (task_id, context_id)   -- N:N, PK(task_id, context_id)
 checklist_items  (id, task_id, text, done BOOL, position INTEGER)
 
 habits
@@ -219,22 +263,24 @@ Marcos pequenos, um ou mais commits cada.
 - **M2.** Definir os nomes dos comandos. Store: abrir o banco, aplicar
   migração, inserir e listar tarefas. Primeiros comandos de criar e listar, com
   título só.
-- **M3.** Parser da sintaxe todo.txt (prioridade, `+tag`, `@contexto`, `due:`,
-  `est:`, chaves extras) com testes (`go test`).
+- **M3.** Cadastro de disciplinas, projetos e contextos. Parser da sintaxe do
+  neivi (`@disciplina`, `+projeto`, `pri:`, `due:` com datas `dd/mm/aa`, `est:`,
+  `ctx:`, chaves extras) com testes (`go test`).
 - **M4.** Concluir, reabrir, remover e editar.
 - **M5.** Filtros da listagem e visão do dia com ordenação.
 - **M6.** Tarefas filhas e checklist.
 - **M7.** Hábitos: cadastro, marcação, frequências e streak com folga (com
   testes de datas).
-- **M8.** Exportação e importação (migração inicial do `~/.todo/todo.txt`).
+- **M8.** Exportação e importação com as conversões da seção 4.4 (migração
+  inicial do `~/.todo/todo.txt`).
 - **M9.** Backup diário configurado e testado. Uso real por uma semana em
   paralelo com o Ganbatte, corrigindo o que incomodar. Tag `v0.1.0`.
 
 ## 11. Fora do v0.1
 
-TUI, cronômetro, recorrências, projetos, disciplinas, fluxo de aula,
-integrações, assistente, lembretes, servidor e celular. Pomodoro está fora do
-plano.
+TUI, cronômetro, recorrências, detalhes de projetos e disciplinas (além do
+nome), fluxo de aula, integrações, assistente, lembretes, servidor e celular.
+Pomodoro está fora do plano.
 
 ## 12. Roadmap depois do v0.1
 
@@ -256,3 +302,27 @@ plano.
 | Recorrências | Mesmo modelo do Ganbatte (`rep:`); detalhar | Antes da fase em que entrarem |
 | Layout e navegação da TUI | Painéis, atalhos, telas | Início do v0.2 |
 | Regras de tempo do cronômetro | Valor de X horas para aviso e parada | v0.2 |
+
+## 14. Ideias descartadas
+
+O que já foi considerado e ficou de fora, com o motivo. Serve para não reabrir a
+mesma discussão.
+
+- **Prioridade como `(A)` no começo da linha:** o título vem primeiro; virou
+  `pri:`. O `(A)` existe só na conversão com o todo.txt.
+- **`+fac.BD` para disciplina:** era um projeto fantasiado de disciplina.
+  Disciplina virou entidade, marcada com `@`.
+- **`@` para contexto:** o símbolo ficou para disciplina; contexto é
+  característica da tarefa e virou `ctx:`.
+- **Tags livres:** sem uso claro além de disciplina, projeto e contexto. Voltam
+  se fizerem falta.
+- **todo.txt como fonte da verdade:** não guarda bem filhas, checklist, hábitos
+  e histórico; virou só exportação.
+- **Inbox separada:** obriga a esvaziar; "sem disciplina e sem projeto" é um
+  filtro.
+- **Interface web:** o terminal é onde eu trabalho; a TUI resolve o visual.
+- **`cobra`:** poucos comandos; o pacote `flag` basta.
+- **XP, cartas e mundo:** utilidade antes de jogo.
+- **Pomodoro:** o cronômetro por tarefa cobre o que importa.
+- **Pensar em outros usuários:** instalador, temporadas e suporte foram o que
+  pesou no Ganbatte.
