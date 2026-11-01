@@ -25,7 +25,7 @@ func main() {
 
 	switch os.Args[1] {
 	case "add":
-		runAdd(os.Args[2:])
+		runAdd(db, os.Args[2:])
 	case "ls":
 		runLs(os.Args[2:])
 	default:

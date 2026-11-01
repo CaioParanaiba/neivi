@@ -31,3 +31,17 @@ func Open(path string) (*sql.DB, error) {
 	}
 	return db, nil
 }
+
+func AddTask(db *sql.DB, title string) (int64, error) {
+	res, err := db.Exec("INSERT INTO tasks (title) VALUES (?)", title)
+	if err != nil {
+		return 0, fmt.Errorf("inserir tarefa: %w", err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("retornar id: %w", err)
+	}
+
+	return id, nil
+}

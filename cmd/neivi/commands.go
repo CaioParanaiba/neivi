@@ -1,8 +1,12 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/CaioParanaiba/neivi/internal/store"
 )
 
 const help = `uso: neivi <comando> [argumentos]
@@ -16,8 +20,20 @@ func usage() {
 	fmt.Fprint(os.Stderr, help)
 }
 
-func runAdd(args []string) {
-	fmt.Println("Foi adicionado a tarefa:", args)
+func runAdd(db *sql.DB, args []string) {
+	title := strings.Join(args, " ")
+
+	if title == "" {
+		fmt.Fprintln(os.Stderr, "erro: tarefa sem titulo")
+		os.Exit(1)
+	}
+
+	id, err := store.AddTask(db, title)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+	fmt.Println("Tarefa:", id, "adicionada")
 }
 
 func runLs(args []string) {
