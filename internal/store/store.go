@@ -3,6 +3,7 @@ package store
 
 import (
 	"database/sql"
+	_ "embed"
 	"fmt"
 
 	_ "modernc.org/sqlite"
@@ -10,8 +11,11 @@ import (
 
 //const path_sql = "~/Code/neivi/migrations/001_init.sql"
 
+//go:embed migrations/001_init.sql
+var schema string
+
 func Open(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)")
 	if err != nil {
 		return nil, fmt.Errorf("abrir banco: %w", err)
 	}
@@ -19,6 +23,11 @@ func Open(path string) (*sql.DB, error) {
 	if err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("conectar ao banco: %w", err)
+	}
+	_, err = db.Exec(schema)
+	if err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("criar tabelas: %w", err)
 	}
 	return db, nil
 }

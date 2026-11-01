@@ -1,16 +1,16 @@
-CREATE TABLE subjects (
+CREATE TABLE IF NOT EXISTS subjects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
     name TEXT UNIQUE
 );
 
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
     name TEXT UNIQUE
 );
 
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
     priority TEXT CHECK ( priority IN ('A', 'B', 'C', 'D') ),
@@ -24,14 +24,14 @@ CREATE TABLE tasks (
     done_at TEXT
 );
 
-CREATE TABLE checklist_items (
+CREATE TABLE IF NOT EXISTS checklist_items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     text TEXT NOT NULL,
     done INTEGER NOT NULL CHECK (done IN (0,1)) DEFAULT (0)
 );
 
-CREATE TABLE habits (
+CREATE TABLE IF NOT EXISTS habits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     kind TEXT NOT NULL CHECK (kind IN ('bool','count')),
@@ -43,7 +43,7 @@ CREATE TABLE habits (
     archived INTEGER NOT NULL CHECK (archived IN (0,1)) DEFAULT (0)
 );
 
-CREATE TABLE habit_logs (
+CREATE TABLE IF NOT EXISTS habit_logs (
     habit_id INTEGER NOT NULL REFERENCES habits(id),
     date TEXT NOT NULL DEFAULT (date('now','localtime')),
     value INTEGER NOT NULL,
