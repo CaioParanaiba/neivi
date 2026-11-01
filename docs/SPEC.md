@@ -195,8 +195,12 @@ apagaria o que o Ganbatte gravou desde o último export. Por isso:
 - **Banco:** `~/.local/share/neivi/neivi.db` (padrão XDG).
 - **Configuração:** `~/.config/neivi/`.
 - **Driver:** `modernc.org/sqlite` (Go puro, sem cgo) com `database/sql`.
-- **Migrações:** arquivos SQL versionados aplicados na inicialização (tabela
-  `schema_version`).
+- **Esquema:** `001_init.sql` embutido no binário (`embed`), com
+  `CREATE TABLE IF NOT EXISTS`, executado sempre que o banco é aberto. O
+  controle de versões (`PRAGMA user_version`, só aplicar o que falta) entra
+  junto com a primeira migração `002`, quando houver dados reais.
+- **Chaves estrangeiras** ligadas em toda conexão (`_pragma=foreign_keys(1)` no
+  caminho do banco).
 
 O banco é o único lugar onde os dados existem, então o backup faz parte do
 critério de pronto do v0.1:
@@ -252,8 +256,8 @@ neivi/
   internal/habit/        struct Habit + cálculo de streak com folga
   internal/todotxt/      parser da sintaxe e exportação
   internal/store/        acesso ao SQLite (única camada que fala SQL)
+    migrations/001_init.sql   (dentro do store por causa do embed)
   internal/cli/          comandos; só chamam o núcleo e imprimem
-  migrations/001_init.sql
   docs/SPEC.md
   README.md .gitignore go.mod
 ```
