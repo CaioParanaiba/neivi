@@ -36,6 +36,14 @@ func runAdd(db *sql.DB, args []string) {
 	fmt.Println("Tarefa:", id, "adicionada")
 }
 
-func runLs(args []string) {
-	fmt.Println("Rodando o comando associado a ls:", args)
+func runLs(db *sql.DB, args []string) {
+	tl, err := store.ListTasks(db)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	for _, t := range tl {
+		fmt.Println(t.ID, t.Title, t.CreatedAt)
+	}
 }

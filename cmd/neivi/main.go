@@ -27,7 +27,7 @@ func main() {
 	case "add":
 		runAdd(db, os.Args[2:])
 	case "ls":
-		runLs(os.Args[2:])
+		runLs(db, os.Args[2:])
 	default:
 		fmt.Fprintln(os.Stderr, "Comando", os.Args[1], "eh desconhecido")
 		usage()
