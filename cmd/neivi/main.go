@@ -3,9 +3,21 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/CaioParanaiba/neivi/internal/store"
 )
 
+const dbPath = "/tmp/neivi-teste.db"
+
 func main() {
+	db, err := store.Open(dbPath)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	defer db.Close()
+
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(1)
