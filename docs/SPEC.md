@@ -151,6 +151,9 @@ Os nomes dos comandos e a forma de usar a CLI ainda não foram definidos (seçã
 - Criar tarefa a partir de uma linha na sintaxe do neivi.
 - Listar tarefas com filtros (disciplina, projeto, sem disciplina e
   sem projeto, atrasadas); por padrão só as pendentes.
+- Ver os detalhes de uma tarefa pelo id: todos os campos, checklist (numerado
+  na tela, na ordem de criação) e filhas. A listagem mostra só o resumo de cada
+  tarefa, com o id para usar nos outros comandos.
 - Ver o dia (seção 4.2).
 - Concluir e reabrir.
 - Editar a partir de um novo texto, mantendo filhas e checklist.
@@ -218,7 +221,8 @@ subjects  (id, name UNIQUE)               -- disciplinas: @BD
 projects  (id, name UNIQUE)               -- projetos: +neivi
 
 tasks
-  id INTEGER PK AUTOINCREMENT, title TEXT, priority TEXT NULL ('A'|'B'|'C'),
+  id INTEGER PK AUTOINCREMENT, title TEXT,
+  priority TEXT NULL ('A'|'B'|'C'; o banco aceita 'D', reservado para o futuro),
   due TEXT NULL (ISO), estimate_min INTEGER NULL,
   subject_id INTEGER NULL -> subjects.id   (apagar a disciplina é bloqueado)
   project_id INTEGER NULL -> projects.id   (idem)
@@ -226,8 +230,9 @@ tasks
   extras TEXT NULL                         (chaves desconhecidas, como vieram)
   created_at TEXT (ISO), done_at TEXT NULL (ISO)
 
-checklist_items  (id, task_id, text, done INTEGER 0/1, position INTEGER)
+checklist_items  (id, task_id, text, done INTEGER 0/1)
   -- task_id com ON DELETE CASCADE: some junto com a tarefa
+  -- ordem = ordem de criação (ORDER BY id); sem reordenar no v0.1
 
 habits
   id, name, kind ('bool'|'count'), goal INTEGER NULL,
