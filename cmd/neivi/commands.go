@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/CaioParanaiba/neivi/internal/store"
@@ -82,9 +83,31 @@ func runLs(db *sql.DB, args []string) {
 		os.Exit(1)
 	}
 
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+
+	fmt.Fprintln(w, "ID\tP\tPRAZO\tTAREFA")
+
 	for _, v := range lista {
-		fmt.Println(v.ID, v.Title, v.CreatedAt)
+		if v.Due != "" {
+			d, err := time.Parse("2006-01-02", v.Due)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "erro:", err)
+				os.Exit(1)
+			}
+			v.Due = d.Format("02/01")
+		}
+
+		fmt.Fprintf(w, "%d\t%s\t%s\t%s", v.ID, v.Priority, v.Due, v.Title)
+		if v.SubjectCode != "" {
+			fmt.Fprintf(w, " @%s", v.SubjectCode)
+		}
+		if v.ProjectCode != "" {
+			fmt.Fprintf(w, " +%s", v.ProjectCode)
+		}
+		fmt.Fprintf(w, "\n")
 	}
+
+	w.Flush()
 }
 
 func runSubject(db *sql.DB, args []string) {
