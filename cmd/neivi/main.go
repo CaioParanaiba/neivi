@@ -28,6 +28,10 @@ func main() {
 		runAdd(db, os.Args[2:])
 	case "ls":
 		runLs(db, os.Args[2:])
+	case "subject":
+		runSubject(db, os.Args[2:])
+	case "project":
+		runProject(db, os.Args[2:])
 	default:
 		fmt.Fprintln(os.Stderr, "Comando", os.Args[1], "eh desconhecido")
 		usage()
