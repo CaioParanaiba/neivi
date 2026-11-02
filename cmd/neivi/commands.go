@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/CaioParanaiba/neivi/internal/store"
+	"github.com/CaioParanaiba/neivi/internal/task"
+	"github.com/CaioParanaiba/neivi/internal/todotxt"
 )
 
 const help = `uso: neivi <comando> [argumentos]
@@ -26,14 +29,45 @@ func usage() {
 
 // runAdd adiciona uma task
 func runAdd(db *sql.DB, args []string) {
-	title := strings.Join(args, " ")
-
-	if title == "" {
-		fmt.Fprintln(os.Stderr, "erro: tarefa sem titulo")
+	entry, err := todotxt.ParseTask(args, time.Now())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
 
-	id, err := store.AddTask(db, title)
+	codeSubject := entry.SubjectCode
+	codeProject := entry.ProjectCode
+
+	var idSubject int64
+	if entry.SubjectCode != "" {
+		idSubject, err = store.SubjectIDByCode(db, codeSubject)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+	}
+
+	var idProject int64
+	if entry.ProjectCode != "" {
+		idProject, err = store.ProjectIDByCode(db, codeProject)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+	}
+
+	t := task.Task{
+		Title:       entry.Title,
+		Priority:    entry.Priority,
+		Due:         entry.Due,
+		EstimateMin: entry.EstimateMin,
+		SubjectID:   idSubject,
+		ProjectID:   idProject,
+		//parenteID
+		Extras: entry.Extras,
+	}
+
+	id, err := store.AddTask(db, t)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
