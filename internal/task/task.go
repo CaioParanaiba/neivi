@@ -13,4 +13,6 @@ type Task struct {
 	Extras      string
 	DoneAt      string
 	CreatedAt   string
+	SubjectCode string
+	ProjectCode string
 }

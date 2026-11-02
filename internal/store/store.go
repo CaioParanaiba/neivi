@@ -74,7 +74,17 @@ func AddTask(db *sql.DB, t task.Task) (int64, error) {
 }
 
 func ListTasks(db *sql.DB) ([]task.Task, error) {
-	rows, err := db.Query("SELECT id, title, created_at FROM tasks ORDER BY id")
+	rows, err := db.Query(`SELECT tasks.id, tasks.title,
+                COALESCE(tasks.priority, ''), COALESCE(tasks.due, ''),
+				COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
+				COALESCE(tasks.project_id, 0), COALESCE(tasks.parent_id, 0),
+                COALESCE(tasks.extras, ''), COALESCE(tasks.done_at, ''),
+				tasks.created_at, COALESCE(subjects.code, ''),
+				COALESCE(projects.code, '')
+                FROM tasks
+                LEFT JOIN subjects ON subjects.id = tasks.subject_id
+                LEFT JOIN projects ON projects.id = tasks.project_id
+                ORDER BY tasks.id`)
 	if err != nil {
 		return nil, fmt.Errorf("listar tarefas: %w", err)
 	}
@@ -85,7 +95,11 @@ func ListTasks(db *sql.DB) ([]task.Task, error) {
 	for rows.Next() {
 		var v task.Task
 
-		err := rows.Scan(&v.ID, &v.Title, &v.CreatedAt)
+		err := rows.Scan(&v.ID, &v.Title,
+			&v.Priority, &v.Due, &v.EstimateMin,
+			&v.SubjectID, &v.ProjectID, &v.ParentID,
+			&v.Extras, &v.DoneAt, &v.CreatedAt,
+			&v.SubjectCode, &v.ProjectCode)
 		if err != nil {
 			return nil, fmt.Errorf("ler tarefa: %w", err)
 		}
