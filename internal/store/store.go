@@ -4,6 +4,7 @@ package store
 import (
 	"database/sql"
 	_ "embed"
+	"errors"
 	"fmt"
 
 	_ "modernc.org/sqlite"
@@ -17,6 +18,20 @@ import (
 
 //go:embed migrations/001_init.sql
 var schema string
+
+func nullInt(n int64) any {
+	if n == 0 {
+		return nil
+	}
+	return n
+}
+
+func nullString(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
+}
 
 func Open(path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)")
@@ -36,8 +51,16 @@ func Open(path string) (*sql.DB, error) {
 	return db, nil
 }
 
-func AddTask(db *sql.DB, title string) (int64, error) {
-	res, err := db.Exec("INSERT INTO tasks (title) VALUES (?)", title)
+func AddTask(db *sql.DB, t task.Task) (int64, error) {
+	res, err := db.Exec(`INSERT INTO tasks (title, priority, due, estimate_min, subject_id, project_id, extras)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		t.Title,
+		nullString(t.Priority),
+		nullString(t.Due),
+		nullInt(t.EstimateMin),
+		nullInt(t.SubjectID),
+		nullInt(t.ProjectID),
+		nullString(t.Extras))
 	if err != nil {
 		return 0, fmt.Errorf("inserir tarefa: %w", err)
 	}
@@ -76,6 +99,33 @@ func ListTasks(db *sql.DB) ([]task.Task, error) {
 	}
 
 	return lista, nil
+}
+
+func SubjectIDByCode(db *sql.DB, code string) (int64, error) {
+	var id int64
+	err := db.QueryRow("SELECT id FROM subjects WHERE code = ?", code).Scan(&id)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("disciplina %s nao cadastrada: %w", code, err)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("erro ao consultar disciplinas: %w", err)
+	}
+
+	return id, nil
+}
+func ProjectIDByCode(db *sql.DB, code string) (int64, error) {
+	var id int64
+	err := db.QueryRow("SELECT id FROM projects WHERE code = ?", code).Scan(&id)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("projeto %s nao cadastrada: %w", code, err)
+	}
+	if err != nil {
+		return 0, fmt.Errorf("erro ao consultar projetos: %w", err)
+	}
+
+	return id, nil
 }
 
 // AddSubject cadastra uma disciplina e devolve o id criado.

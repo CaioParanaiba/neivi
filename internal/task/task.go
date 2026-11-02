@@ -2,14 +2,15 @@
 package task
 
 type Task struct {
-	ID        int64
-	Title     string
-	Priority  string
-	Due       string
-	SubjectId int64
-	ProjectId int64
-	ParentId  int64
-	Extras    string
-	doneAt    string
-	CreatedAt string
+	ID          int64
+	Title       string
+	Priority    string
+	Due         string
+	EstimateMin int64
+	SubjectID   int64
+	ProjectID   int64
+	ParentID    int64
+	Extras      string
+	DoneAt      string
+	CreatedAt   string
 }
