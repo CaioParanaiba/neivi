@@ -1,7 +1,14 @@
 # neivi: especificação
 
-Documento vivo. Versão de 31/10/2026, cobrindo o v0.1 em detalhe e as fases
+Documento vivo. Versão de 01/11/2026, cobrindo o v0.1 em detalhe e as fases
 seguintes em linhas gerais.
+
+**Sobre este documento:** a especificação é escrita e mantida principalmente
+com uma IA (Claude). As ideias e as decisões são minhas; a IA ajuda a
+organizá-las, aponta lacunas e redige o texto. O código segue outro modelo: é
+escrito por mim, e a IA atua como mentora: explica conceitos, revisa e recomenda
+materiais de estudo. No máximo, quando eu peço, faz alguma parte mecânica e
+repetitiva para poupar tempo, nunca funcionalidade nova.
 
 ## 1. Princípios
 
@@ -46,8 +53,9 @@ ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
   projeto" é um filtro.
 - **Prioridade:** A/B/C internamente. O rótulo exibido é só um mapeamento.
 - **Subtarefas:** tarefa filha (um nível só) e checklist simples dentro da tarefa.
-- **Disciplinas e projetos são entidades** com tabela própria desde o v0.1 (só o
-  nome). Os detalhes (professor, avaliações, status, pasta) vêm no v0.3 e no
+- **Disciplinas e projetos são entidades** com tabela própria desde o v0.1
+  (código curto, como `BD`, e nome opcional). O código é o que vai depois do `@`
+  ou do `+`. Os detalhes (professor, avaliações, status, pasta) vêm no v0.3 e no
   v0.4.
 - **Sintaxe própria, não a do todo.txt:** símbolo para o que é cadastrado
   (`@` disciplina, `+` projeto); chave para características da tarefa (`pri:`,
@@ -58,6 +66,9 @@ ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
   (mensagens, erros, ajuda) em português.
 - **Biblioteca de CLI:** pacote `flag` da biblioteca padrão, com os subcomandos
   tratados à mão.
+- **Formato dos comandos:** tarefas no nível de cima (`neivi add`, `neivi ls`),
+  por serem o uso diário. O resto em grupos, substantivo e depois verbo
+  (`neivi subject add`, `neivi project ls`).
 - **Idioma do código:** nomes de pacotes, tipos, funções, tabelas e colunas em
   inglês. Comentários e documentação em português.
 
@@ -144,10 +155,21 @@ com hábitos, e tem backup diário funcionando.
 
 ## 5. Operações do v0.1
 
-Os nomes dos comandos e a forma de usar a CLI ainda não foram definidos (seção
-13). O que a CLI precisa permitir:
+Comandos já definidos:
 
-- Cadastrar e listar disciplinas e projetos (só o nome).
+| Comando | Faz |
+|---|---|
+| `neivi add <texto>` | cria uma tarefa |
+| `neivi ls` | lista as tarefas |
+| `neivi subject add <código> [nome]` | cadastra uma disciplina |
+| `neivi subject ls` | lista as disciplinas |
+| `neivi project add <código> [nome]` | cadastra um projeto |
+| `neivi project ls` | lista os projetos |
+
+Os demais seguem o formato da seção 3 e entram aqui quando forem definidos. O
+que a CLI precisa permitir:
+
+- Cadastrar e listar disciplinas e projetos (código e nome opcional).
 - Criar tarefa a partir de uma linha na sintaxe do neivi.
 - Listar tarefas com filtros (disciplina, projeto, sem disciplina e
   sem projeto, atrasadas); por padrão só as pendentes.
@@ -221,8 +243,9 @@ pelo próprio neivi.
 Nomes de tabelas e colunas em inglês, como no código.
 
 ```
-subjects  (id, name UNIQUE)               -- disciplinas: @BD
-projects  (id, name UNIQUE)               -- projetos: +neivi
+subjects  (id, code UNIQUE, name UNIQUE NULL)   -- disciplinas: @BD
+projects  (id, code UNIQUE, name UNIQUE NULL)   -- projetos: +neivi
+  -- o código é o que vai depois do @ ou do +; sem nome, a CLI grava o código
 
 tasks
   id INTEGER PK AUTOINCREMENT, title TEXT,
@@ -253,6 +276,8 @@ habit_logs (habit_id, date DATE, value INTEGER)  -- PK(habit_id, date)
 neivi/
   cmd/neivi/main.go      ponto de entrada
   internal/task/         struct Task + regras (atrasada, concluir...)
+  internal/subject/      struct Subject (disciplina)
+  internal/project/      struct Project (projeto)
   internal/habit/        struct Habit + cálculo de streak com folga
   internal/todotxt/      parser da sintaxe e exportação
   internal/store/        acesso ao SQLite (única camada que fala SQL)
