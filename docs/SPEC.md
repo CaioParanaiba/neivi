@@ -105,17 +105,22 @@ com hábitos, e tem backup diário funcionando.
 - Disciplina ou projeto que não existe é erro, com a sugestão de
   cadastrar. Protege contra erro de digitação.
 - **Datas de entrada** no formato `dd/mm/aa`, aceitando `/` e `-`. Ano com dois
-  dígitos (`26` → `2026`). Sem ano (`05/11`), vale a próxima ocorrência da data.
+  ou quatro dígitos (`26` ou `2026`). Sem ano (`05/11`), vale a próxima
+  ocorrência da data: hoje conta como hoje; data que já passou vai para o ano
+  seguinte. `29/02` sem ano só vale se esse ano for bissexto; senão é erro.
   No banco e no export, sempre ISO (`2026-11-05`). Na tela, `dd/mm`.
 - `est:` aceita minutos e horas: `30m`, `1h`, `1h15`, `90`. Guardado em minutos.
-- **Chaves desconhecidas** (`chave:valor` que o neivi não usa, como `rep:`,
-  `top:`, `aula:`, `av:`) são guardadas como texto e voltam iguais na
-  exportação. Nada se perde na importação.
+- `pri:` aceita minúscula (`pri:a` vira `A`).
+- **Chaves do Ganbatte** que o neivi não usa (`rec:`, `esf:`, `top:`, `rep:`,
+  `aula:`, `gh:`, `av:`, `prova:`) são guardadas em `extras` e voltam iguais na
+  exportação. Nada se perde na importação. Qualquer outra palavra com `:`
+  (`verificar:`, `10:30`, links) faz parte do título.
 - **Aspas opcionais:** o texto depois do comando é juntado com espaços. No zsh,
   o alias `alias neivi='noglob neivi'` deixa `?` e `*` passarem sem aspas; aspas
   só para caracteres como `(`, `)`, `'`, `&`, `;`.
-- Opcional no v0.1: atalhos de data em `due:` (`hoje`, `amanha`, `seg`…`dom`).
-  Se complicar, fica para depois.
+- **Atalhos de data** em `due:`: `hoje`, `amanha`, `seg`…`dom` (também
+  `segunda`…`domingo`, sem acento). Dia da semana é sempre o próximo: `seg`
+  numa segunda é a segunda seguinte.
 
 ### 4.2 Visão do dia
 
@@ -328,7 +333,6 @@ Pomodoro está fora do plano.
 
 | Assunto | Situação | Quando decidir |
 |---|---|---|
-| Atalhos de data em `due:` | `hoje`, `amanha`, `seg`…`dom`: v0.1 ou depois | M3 |
 | Importar o done.txt | Traz histórico antigo para as estatísticas; custo é tratar linhas antigas mal formadas | M8 |
 | Licença | Sem licença (todos os direitos reservados) ou MIT | M1 |
 | Recorrências | Mesmo modelo do Ganbatte (`rep:`); detalhar | Antes da fase em que entrarem |
