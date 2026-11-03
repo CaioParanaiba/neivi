@@ -121,6 +121,17 @@ com hábitos, e tem backup diário funcionando.
 - **Atalhos de data** em `due:`: `hoje`, `amanha`, `seg`…`dom` (também
   `segunda`…`domingo`, sem acento). Dia da semana é sempre o próximo: `seg`
   numa segunda é a segunda seguinte.
+- **Edição parcial:** a edição usa a mesma sintaxe da entrada, e só muda o que
+  aparece no texto; o resto fica como está. Texto solto vira o título novo;
+  sem texto solto, o título não muda. O valor `-` apaga o campo (`pri:-`,
+  `due:-`, `est:-`, `@-`, `+-`, `rec:-`). Extras mudam por chave: `rec:x` troca
+  ou cria só o `rec`.
+
+  ```
+  neivi edit 1 pri:B
+  neivi edit 1 @BD due:sex
+  neivi edit 1 due:-
+  ```
 
 ### 4.2 Visão do dia
 
@@ -166,6 +177,10 @@ Comandos já definidos:
 |---|---|
 | `neivi add <texto>` | cria uma tarefa |
 | `neivi ls` | lista as tarefas |
+| `neivi done <id>...` | conclui uma ou mais tarefas |
+| `neivi reopen <id>...` | reabre uma ou mais tarefas concluídas |
+| `neivi edit <id> <texto>` | muda só os campos que aparecem no texto (seção 4.1) |
+| `neivi rm <id>` | remove a tarefa, pedindo confirmação |
 | `neivi subject add <código> [nome]` | cadastra uma disciplina |
 | `neivi subject ls` | lista as disciplinas |
 | `neivi project add <código> [nome]` | cadastra um projeto |
@@ -182,9 +197,11 @@ que a CLI precisa permitir:
   na tela, na ordem de criação) e filhas. A listagem mostra só o resumo de cada
   tarefa, com o id para usar nos outros comandos.
 - Ver o dia (seção 4.2).
-- Concluir e reabrir.
-- Editar a partir de um novo texto, mantendo filhas e checklist.
-- Remover, pedindo confirmação.
+- Concluir e reabrir (vários ids de uma vez). Concluir o que já está concluído,
+  ou reabrir o que está pendente, só avisa. Id inexistente é erro.
+- Editar só os campos que aparecem no texto, mantendo id, datas, filhas e
+  checklist.
+- Remover, pedindo confirmação (`[s/N]`).
 - Criar tarefa filha.
 - Adicionar e marcar itens do checklist.
 - Criar hábito, listar hábitos com streak e status de hoje, registrar o hábito
@@ -338,6 +355,9 @@ Pomodoro está fora do plano.
 | Recorrências | Mesmo modelo do Ganbatte (`rep:`); detalhar | Antes da fase em que entrarem |
 | Layout e navegação da TUI | Painéis, atalhos, telas | Início do v0.2 |
 | Regras de tempo do cronômetro | Valor de X horas para aviso e parada | v0.2 |
+| Edição pelo `$EDITOR` | Edição sem texto abre a linha completa da tarefa no editor (como o `git commit`); depende do conversor para texto | Depois do M8 |
+| Edição por campos numerados | Mostra a tarefa com os campos numerados e o usuário escolhe quais editar; é interface interativa | Layout da TUI (v0.2) |
+| Remover tarefa com filhas | Só bloquear (FK) ou oferecer remover junto; mensagem clara | M6 |
 
 ## 14. Ideias descartadas
 
