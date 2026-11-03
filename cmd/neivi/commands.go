@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -85,9 +87,14 @@ func runLs(db *sql.DB, args []string) {
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
-	fmt.Fprintln(w, "ID\tP\tPRAZO\tTAREFA")
+	fmt.Fprintln(w, "ID\tX\tP\tPRAZO\tTAREFA")
 
 	for _, v := range lista {
+		done := ""
+		if v.DoneAt != "" {
+			done = "x"
+		}
+
 		if v.Due != "" {
 			d, err := time.Parse("2006-01-02", v.Due)
 			if err != nil {
@@ -97,7 +104,7 @@ func runLs(db *sql.DB, args []string) {
 			v.Due = d.Format("02/01")
 		}
 
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s", v.ID, v.Priority, v.Due, v.Title)
+		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s", v.ID, done, v.Priority, v.Due, v.Title)
 		if v.SubjectCode != "" {
 			fmt.Fprintf(w, " @%s", v.SubjectCode)
 		}
@@ -108,6 +115,54 @@ func runLs(db *sql.DB, args []string) {
 	}
 
 	w.Flush()
+}
+
+func runDoneTasks(db *sql.DB, args []string) {
+
+	if len(args) == 0 {
+		usage()
+		os.Exit(1)
+	}
+
+	var idDone, idNotDone []string
+	for _, sId := range args {
+		id, err := strconv.ParseInt(sId, 10, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", sId, err)
+			continue
+		}
+
+		v, err := store.GetTask(db, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe\n", id)
+			continue
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+
+		if v.DoneAt != "" {
+			idNotDone = append(idNotDone, sId)
+			continue
+		}
+
+		err = store.DoneTask(db, id)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+		idDone = append(idDone, sId)
+	}
+
+	if len(idDone) > 0 {
+		s := strings.Join(idDone, " ")
+		fmt.Fprintf(os.Stdout, "tarefa(s): %s feitas\n", s)
+	}
+	if len(idNotDone) > 0 {
+		s := strings.Join(idNotDone, " ")
+		fmt.Fprintf(os.Stdout, "tarefa(s): %s ja feitas\n", s)
+	}
 }
 
 func runSubject(db *sql.DB, args []string) {

@@ -32,6 +32,8 @@ func main() {
 		runSubject(db, os.Args[2:])
 	case "project":
 		runProject(db, os.Args[2:])
+	case "done":
+		runDoneTasks(db, os.Args[2:])
 	default:
 		fmt.Fprintln(os.Stderr, "Comando", os.Args[1], "eh desconhecido")
 		usage()
