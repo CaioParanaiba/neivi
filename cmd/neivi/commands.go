@@ -124,7 +124,7 @@ func runDoneTasks(db *sql.DB, args []string) {
 		os.Exit(1)
 	}
 
-	var idDone, idNotDone []string
+	var idChanged, idSkipped []string
 	for _, sId := range args {
 		id, err := strconv.ParseInt(sId, 10, 64)
 		if err != nil {
@@ -143,7 +143,7 @@ func runDoneTasks(db *sql.DB, args []string) {
 		}
 
 		if v.DoneAt != "" {
-			idNotDone = append(idNotDone, sId)
+			idSkipped = append(idSkipped, sId)
 			continue
 		}
 
@@ -152,16 +152,63 @@ func runDoneTasks(db *sql.DB, args []string) {
 			fmt.Fprintln(os.Stderr, "erro:", err)
 			os.Exit(1)
 		}
-		idDone = append(idDone, sId)
+		idChanged = append(idChanged, sId)
 	}
 
-	if len(idDone) > 0 {
-		s := strings.Join(idDone, " ")
+	if len(idChanged) > 0 {
+		s := strings.Join(idChanged, " ")
 		fmt.Fprintf(os.Stdout, "tarefa(s): %s feitas\n", s)
 	}
-	if len(idNotDone) > 0 {
-		s := strings.Join(idNotDone, " ")
+	if len(idSkipped) > 0 {
+		s := strings.Join(idSkipped, " ")
 		fmt.Fprintf(os.Stdout, "tarefa(s): %s ja feitas\n", s)
+	}
+}
+
+func runReopenTasks(db *sql.DB, args []string) {
+	if len(args) == 0 {
+		usage()
+		os.Exit(1)
+	}
+
+	var idChanged, idSkipped []string
+	for _, sId := range args {
+		id, err := strconv.ParseInt(sId, 10, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", sId, err)
+			continue
+		}
+
+		v, err := store.GetTask(db, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe\n", id)
+			continue
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+
+		if v.DoneAt == "" {
+			idSkipped = append(idSkipped, sId)
+			continue
+		}
+
+		err = store.ReopenTask(db, id)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+		idChanged = append(idChanged, sId)
+	}
+
+	if len(idChanged) > 0 {
+		s := strings.Join(idChanged, " ")
+		fmt.Fprintf(os.Stdout, "tarefa(s): %s reabertas\n", s)
+	}
+	if len(idSkipped) > 0 {
+		s := strings.Join(idSkipped, " ")
+		fmt.Fprintf(os.Stdout, "tarefa(s): %s nao estavam concluidas\n", s)
 	}
 }
 

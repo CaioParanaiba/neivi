@@ -34,6 +34,8 @@ func main() {
 		runProject(db, os.Args[2:])
 	case "done":
 		runDoneTasks(db, os.Args[2:])
+	case "reopen":
+
 	default:
 		fmt.Fprintln(os.Stderr, "Comando", os.Args[1], "eh desconhecido")
 		usage()
