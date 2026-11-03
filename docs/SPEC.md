@@ -180,7 +180,7 @@ Comandos já definidos:
 | `neivi done <id>...` | conclui uma ou mais tarefas |
 | `neivi reopen <id>...` | reabre uma ou mais tarefas concluídas |
 | `neivi edit <id> <texto>` | muda só os campos que aparecem no texto (seção 4.1) |
-| `neivi rm <id>` | remove a tarefa, pedindo confirmação |
+| `neivi rm <id>...` | remove uma ou mais tarefas, pedindo confirmação de cada uma |
 | `neivi subject add <código> [nome]` | cadastra uma disciplina |
 | `neivi subject ls` | lista as disciplinas |
 | `neivi project add <código> [nome]` | cadastra um projeto |
@@ -201,7 +201,8 @@ que a CLI precisa permitir:
   ou reabrir o que está pendente, só avisa. Id inexistente é erro.
 - Editar só os campos que aparecem no texto, mantendo id, datas, filhas e
   checklist.
-- Remover, pedindo confirmação (`[s/N]`).
+- Remover (vários ids de uma vez), pedindo confirmação de cada uma (`[s/N]`;
+  só `s` remove, Enter cancela).
 - Criar tarefa filha.
 - Adicionar e marcar itens do checklist.
 - Criar hábito, listar hábitos com streak e status de hoje, registrar o hábito
