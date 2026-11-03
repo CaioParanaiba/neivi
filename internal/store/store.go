@@ -19,6 +19,32 @@ import (
 //go:embed migrations/001_init.sql
 var schema string
 
+// scaner de task, para facilitar e refatorar de forma facil
+type scanner interface {
+	Scan(dest ...any) error
+}
+
+const selectTasks = `SELECT tasks.id, tasks.title,
+        COALESCE(tasks.priority, ''), COALESCE(tasks.due, ''),
+        COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
+        COALESCE(tasks.project_id, 0), COALESCE(tasks.parent_id, 0),
+        COALESCE(tasks.extras, ''), COALESCE(tasks.done_at, ''),
+        tasks.created_at, COALESCE(subjects.code, ''),
+        COALESCE(projects.code, '')
+        FROM tasks
+        LEFT JOIN subjects ON subjects.id = tasks.subject_id
+        LEFT JOIN projects ON projects.id = tasks.project_id`
+
+func scanTask(s scanner) (task.Task, error) {
+	var v task.Task
+	err := s.Scan(&v.ID, &v.Title,
+		&v.Priority, &v.Due, &v.EstimateMin,
+		&v.SubjectID, &v.ProjectID, &v.ParentID,
+		&v.Extras, &v.DoneAt, &v.CreatedAt,
+		&v.SubjectCode, &v.ProjectCode)
+	return v, err
+}
+
 func nullInt(n int64) any {
 	if n == 0 {
 		return nil
@@ -74,17 +100,8 @@ func AddTask(db *sql.DB, t task.Task) (int64, error) {
 }
 
 func ListTasks(db *sql.DB) ([]task.Task, error) {
-	rows, err := db.Query(`SELECT tasks.id, tasks.title,
-                COALESCE(tasks.priority, ''), COALESCE(tasks.due, ''),
-				COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
-				COALESCE(tasks.project_id, 0), COALESCE(tasks.parent_id, 0),
-                COALESCE(tasks.extras, ''), COALESCE(tasks.done_at, ''),
-				tasks.created_at, COALESCE(subjects.code, ''),
-				COALESCE(projects.code, '')
-                FROM tasks
-                LEFT JOIN subjects ON subjects.id = tasks.subject_id
-                LEFT JOIN projects ON projects.id = tasks.project_id
-                ORDER BY tasks.id`)
+	rows, err := db.Query(selectTasks + " ORDER BY tasks.id")
+
 	if err != nil {
 		return nil, fmt.Errorf("listar tarefas: %w", err)
 	}
@@ -93,17 +110,10 @@ func ListTasks(db *sql.DB) ([]task.Task, error) {
 
 	var lista []task.Task
 	for rows.Next() {
-		var v task.Task
-
-		err := rows.Scan(&v.ID, &v.Title,
-			&v.Priority, &v.Due, &v.EstimateMin,
-			&v.SubjectID, &v.ProjectID, &v.ParentID,
-			&v.Extras, &v.DoneAt, &v.CreatedAt,
-			&v.SubjectCode, &v.ProjectCode)
+		v, err := scanTask(rows) // rows é *sql.Rows → serve como scanner
 		if err != nil {
 			return nil, fmt.Errorf("ler tarefa: %w", err)
 		}
-
 		lista = append(lista, v)
 	}
 
@@ -236,4 +246,36 @@ func ListProjects(db *sql.DB) ([]project.Project, error) {
 	}
 
 	return lista, nil
+}
+
+// adiquirir a tarefa pelo id
+func GetTask(db *sql.DB, id int64) (task.Task, error) {
+	v, err := scanTask(db.QueryRow(selectTasks+" WHERE tasks.id = ?", id))
+	if errors.Is(err, sql.ErrNoRows) {
+		return task.Task{}, fmt.Errorf("A task: %d nao encontrada: %w", id, err)
+	} else {
+		if err != nil {
+			return task.Task{}, fmt.Errorf("erro ao consultar as taks: %w", err)
+		}
+		return v, nil
+	}
+
+}
+
+func DoneTask(db *sql.DB, id int64) error {
+	_, err := db.Exec("UPDATE tasks SET done_at = datetime('now', 'localtime') WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("concluir tarefa %d: %w", id, err)
+	}
+
+	return nil
+}
+
+func ReopenTask(db *sql.DB, id int64) error {
+	_, err := db.Exec("UPDATE tasks SET done_at = NULL WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("reabrir tarefa %d: %w", id, err)
+	}
+
+	return nil
 }
