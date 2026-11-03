@@ -279,3 +279,12 @@ func ReopenTask(db *sql.DB, id int64) error {
 
 	return nil
 }
+
+func RmTask(db *sql.DB, id int64) error {
+	_, err := db.Exec("DELETE FROM tasks WHERE id = ?", id)
+	if err != nil {
+		return fmt.Errorf("deletar tarefa %d: %w", id, err)
+	}
+
+	return nil
+}

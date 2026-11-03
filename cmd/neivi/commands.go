@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -209,6 +210,52 @@ func runReopenTasks(db *sql.DB, args []string) {
 	if len(idSkipped) > 0 {
 		s := strings.Join(idSkipped, " ")
 		fmt.Fprintf(os.Stdout, "tarefa(s): %s nao estavam concluidas\n", s)
+	}
+}
+
+func runRmTasks(db *sql.DB, args []string) {
+	if len(args) == 0 {
+		usage()
+		os.Exit(1)
+	}
+
+	// respostas linha a linha
+	// um reader só para o laço
+	reader := bufio.NewReader(os.Stdin)
+
+	for _, sId := range args {
+		id, err := strconv.ParseInt(sId, 10, 64)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", sId, err)
+			continue
+		}
+
+		v, err := store.GetTask(db, id)
+		if errors.Is(err, sql.ErrNoRows) {
+			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe\n", id)
+			continue
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+
+		fmt.Fprintf(os.Stdout, "remover a tarefa %d \"%s\"? [s/N] ", id, v.Title)
+		line, _ := reader.ReadString('\n')
+		ans := strings.TrimSpace(line)
+
+		ans = strings.ToUpper(ans)
+
+		if ans != "S" {
+			continue
+		}
+
+		err = store.RmTask(db, id)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			continue
+		}
+		fmt.Fprintf(os.Stdout, "tarefa %d removida\n", id)
 	}
 }
 
