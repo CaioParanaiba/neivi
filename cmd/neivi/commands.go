@@ -21,6 +21,10 @@ const help = `uso: neivi <comando> [argumentos]
 comandos:
   add <texto>                adicionar tarefa
   ls                         listar tarefas
+  done <id>...               concluir tarefas
+  reopen <id>...             reabrir tarefas concluidas
+  edit <id> <texto>          mudar so os campos do texto
+  rm <id>...                 remover tarefas (pede confirmacao)
   subject add <code> [nome]  adicionar disciplina
   subject ls                 listar disciplinas
   project add <code> [nome]  adicionar projeto
@@ -88,6 +92,21 @@ func runAdd(db *sql.DB, args []string) {
 	fmt.Println("Tarefa:", id, "adicionada")
 }
 
+// formatEst mostra a estimativa como 30m, 1h ou 1h15; vazia quando não tem
+func formatEst(min int64) string {
+	if min <= 0 {
+		return ""
+	}
+	h, m := min/60, min%60
+	if h == 0 {
+		return fmt.Sprintf("%dm", m)
+	}
+	if m == 0 {
+		return fmt.Sprintf("%dh", h)
+	}
+	return fmt.Sprintf("%dh%02d", h, m)
+}
+
 func runLs(db *sql.DB, args []string) {
 	lista, err := store.ListTasks(db)
 	if err != nil {
@@ -97,7 +116,7 @@ func runLs(db *sql.DB, args []string) {
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
-	fmt.Fprintln(w, "ID\tX\tP\tPRAZO\tTAREFA")
+	fmt.Fprintln(w, "ID\tX\tP\tPRAZO\tEST\tTAREFA")
 
 	for _, v := range lista {
 		done := ""
@@ -114,7 +133,7 @@ func runLs(db *sql.DB, args []string) {
 			v.Due = d.Format("02/01")
 		}
 
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s", v.ID, done, v.Priority, v.Due, v.Title)
+		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%s", v.ID, done, v.Priority, v.Due, formatEst(v.EstimateMin), v.Title)
 		if v.SubjectCode != "" {
 			fmt.Fprintf(w, " @%s", v.SubjectCode)
 		}
@@ -136,7 +155,7 @@ func applyText(field *string, v string) {
 	}
 }
 
-func applyEdit(db *sql.DB, t *task.Task, e todotxt.Entry) {
+func applyEdit(db *sql.DB, t *task.Task, e todotxt.Entry) error {
 	applyText(&t.Title, e.Title)
 	applyText(&t.Description, e.Description)
 	applyText(&t.Priority, e.Priority)
@@ -159,8 +178,7 @@ func applyEdit(db *sql.DB, t *task.Task, e todotxt.Entry) {
 
 	idS, idP, err := resolveCode(db, sCode, pCode)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "erro:", err)
-		os.Exit(1)
+		return err
 	}
 
 	if e.SubjectCode == "-" {
@@ -174,6 +192,8 @@ func applyEdit(db *sql.DB, t *task.Task, e todotxt.Entry) {
 	} else if e.ProjectCode != "" {
 		t.ProjectID = idP
 	}
+
+	return nil
 }
 
 func runEdit(db *sql.DB, args []string) {
@@ -207,7 +227,11 @@ func runEdit(db *sql.DB, args []string) {
 		os.Exit(1)
 	}
 
-	applyEdit(db, &t, entry)
+	err = applyEdit(db, &t, entry)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
 
 	err = store.UpdateTask(db, t)
 	if err != nil {

@@ -150,7 +150,7 @@ func SubjectIDByCode(db *sql.DB, code string) (int64, error) {
 	err := db.QueryRow("SELECT id FROM subjects WHERE code = ?", code).Scan(&id)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, fmt.Errorf("disciplina %s nao cadastrada: %w", code, err)
+		return 0, fmt.Errorf("disciplina %s nao cadastrada", code)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("erro ao consultar disciplinas: %w", err)
@@ -163,7 +163,7 @@ func ProjectIDByCode(db *sql.DB, code string) (int64, error) {
 	err := db.QueryRow("SELECT id FROM projects WHERE code = ?", code).Scan(&id)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, fmt.Errorf("projeto %s nao cadastrada: %w", code, err)
+		return 0, fmt.Errorf("projeto %s nao cadastrado", code)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("erro ao consultar projetos: %w", err)
