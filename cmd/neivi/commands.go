@@ -31,6 +31,29 @@ func usage() {
 	fmt.Fprint(os.Stderr, help)
 }
 
+// dada a string dos codigos retorna os ids correspondentes
+func resolveCode(db *sql.DB, subjectCode string, projectCode string) (int64, int64, error) {
+
+	var idSubject int64
+	var err error
+	if subjectCode != "" {
+		idSubject, err = store.SubjectIDByCode(db, subjectCode)
+		if err != nil {
+			return 0, 0, err
+		}
+	}
+
+	var idProject int64
+	if projectCode != "" {
+		idProject, err = store.ProjectIDByCode(db, projectCode)
+		if err != nil {
+			return idSubject, 0, err
+		}
+	}
+
+	return idSubject, idProject, nil
+}
+
 // runAdd adiciona uma task
 func runAdd(db *sql.DB, args []string) {
 	entry, err := todotxt.ParseTask(args, time.Now())
@@ -39,25 +62,10 @@ func runAdd(db *sql.DB, args []string) {
 		os.Exit(1)
 	}
 
-	codeSubject := entry.SubjectCode
-	codeProject := entry.ProjectCode
-
-	var idSubject int64
-	if entry.SubjectCode != "" {
-		idSubject, err = store.SubjectIDByCode(db, codeSubject)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "erro:", err)
-			os.Exit(1)
-		}
-	}
-
-	var idProject int64
-	if entry.ProjectCode != "" {
-		idProject, err = store.ProjectIDByCode(db, codeProject)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, "erro:", err)
-			os.Exit(1)
-		}
+	idSubject, idProject, err := resolveCode(db, entry.SubjectCode, entry.ProjectCode)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
 	}
 
 	t := task.Task{
