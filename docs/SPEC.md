@@ -79,9 +79,9 @@ com hábitos, e tem backup diário funcionando.
 
 ### 4.1 Tarefas
 
-- Campos: título; prioridade A/B/C (opcional); prazo (opcional); disciplina
-  (opcional); projeto (opcional); estimativa em minutos (opcional);
-  datas de criação e de conclusão.
+- Campos: título; descrição (opcional); prioridade A/B/C (opcional); prazo
+  (opcional); disciplina (opcional); projeto (opcional); estimativa em minutos
+  (opcional); datas de criação e de conclusão.
 - A data de conclusão é salva desde o v0.1, porque o histórico e as estatísticas
   das fases futuras dependem dela.
 - **Tarefa filha:** uma tarefa com `parent_id`. Um nível só.
@@ -101,6 +101,7 @@ com hábitos, e tem backup diário funcionando.
   | `pri:A` | prioridade A, B ou C |
   | `due:05/11/26` | prazo |
   | `est:30m` | estimativa |
+  | `-- texto` | descrição |
 
 - Disciplina ou projeto que não existe é erro, com a sugestão de
   cadastrar. Protege contra erro de digitação.
@@ -121,11 +122,22 @@ com hábitos, e tem backup diário funcionando.
 - **Atalhos de data** em `due:`: `hoje`, `amanha`, `seg`…`dom` (também
   `segunda`…`domingo`, sem acento). Dia da semana é sempre o próximo: `seg`
   numa segunda é a segunda seguinte.
+- **Descrição:** o título fica curto e o detalhe vai depois de `--`. O primeiro
+  `--` abre a descrição; um segundo `--` fecha, e o que vem depois volta a ser
+  lido como marcas. Sem o segundo, a descrição vai até o fim da linha. Dentro
+  dela nada é interpretado (`@`, `+`, `:` são texto). A descrição não pode
+  conter `--`. Aparece nos detalhes da tarefa, não na listagem.
+
+  ```
+  neivi add fazer trabalho @BD -- conforme o slide 2
+  neivi add fazer trabalho -- conforme o slide 2 -- @BD pri:A
+  ```
+
 - **Edição parcial:** a edição usa a mesma sintaxe da entrada, e só muda o que
   aparece no texto; o resto fica como está. Texto solto vira o título novo;
   sem texto solto, o título não muda. O valor `-` apaga o campo (`pri:-`,
-  `due:-`, `est:-`, `@-`, `+-`, `rec:-`). Extras mudam por chave: `rec:x` troca
-  ou cria só o `rec`.
+  `due:-`, `est:-`, `@-`, `+-`, `-- -`). O título não pode ser apagado. Extras
+  não são editáveis no v0.1.
 
   ```
   neivi edit 1 pri:B
@@ -165,6 +177,7 @@ com hábitos, e tem backup diário funcionando.
   | `+neivi` | `+neivi` |
   | prazo | `due:2026-11-05` (ISO) |
   | (guardado em `extras`) | `@pc` e outros contextos do Ganbatte |
+  | descrição | (não exportada: o todo.txt não tem lugar para ela) |
 
   A exportação converte da esquerda para a direita; a importação, da direita
   para a esquerda.
@@ -271,7 +284,7 @@ projects  (id, code UNIQUE, name UNIQUE NULL)   -- projetos: +neivi
   -- o código é o que vai depois do @ ou do +; sem nome, a CLI grava o código
 
 tasks
-  id INTEGER PK AUTOINCREMENT, title TEXT,
+  id INTEGER PK AUTOINCREMENT, title TEXT, description TEXT NULL,
   priority TEXT NULL ('A'|'B'|'C'; o banco aceita 'D', reservado para o futuro),
   due TEXT NULL (ISO), estimate_min INTEGER NULL,
   subject_id INTEGER NULL -> subjects.id   (apagar a disciplina é bloqueado)
