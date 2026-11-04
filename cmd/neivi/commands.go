@@ -70,6 +70,7 @@ func runAdd(db *sql.DB, args []string) {
 
 	t := task.Task{
 		Title:       entry.Title,
+		Description: entry.Description,
 		Priority:    entry.Priority,
 		Due:         entry.Due,
 		EstimateMin: entry.EstimateMin,

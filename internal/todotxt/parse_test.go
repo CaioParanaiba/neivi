@@ -231,6 +231,40 @@ func TestParseTask(t *testing.T) {
 		{"apagar estimativa no add", []string{"tarefa", "est:-"}, Entry{}, true},
 		{"apagar disciplina no add", []string{"tarefa", "@-"}, Entry{}, true},
 		{"apagar projeto no add", []string{"tarefa", "+-"}, Entry{}, true},
+		{"apagar descricao no add", []string{"tarefa", "--", "-"}, Entry{}, true},
+		{
+			"descricao ate o fim",
+			[]string{"fazer", "trabalho", "@BD", "--", "conforme", "o", "slide", "2"},
+			Entry{Title: "fazer trabalho", SubjectCode: "BD", Description: "conforme o slide 2"},
+			false,
+		},
+		{
+			"descricao fechada e marcas depois",
+			[]string{"fazer", "trabalho", "--", "conforme", "o", "slide", "2", "--", "@BD", "pri:A"},
+			Entry{Title: "fazer trabalho", Description: "conforme o slide 2", SubjectCode: "BD", Priority: "A"},
+			false,
+		},
+		{
+			"marcas dentro da descricao sao texto",
+			[]string{"reuniao", "--", "as", "10:30", "com", "@fulano", "pri:A", "+x"},
+			Entry{Title: "reuniao", Description: "as 10:30 com @fulano pri:A +x"},
+			false,
+		},
+		{
+			"titulo depois da descricao",
+			[]string{"fazer", "--", "slide", "2", "--", "trabalho"},
+			Entry{Title: "fazer trabalho", Description: "slide 2"},
+			false,
+		},
+		{
+			"terceiro separador reabre e junta",
+			[]string{"a", "--", "b", "--", "@BD", "--", "c"},
+			Entry{Title: "a", SubjectCode: "BD", Description: "b c"},
+			false,
+		},
+		{"separador sem descricao", []string{"tarefa", "--"}, Entry{Title: "tarefa"}, false},
+		{"separador aberto e fechado", []string{"tarefa", "--", "--"}, Entry{Title: "tarefa"}, false},
+		{"so descricao sem titulo", []string{"--", "texto"}, Entry{}, true},
 	}
 
 	for _, tc := range tests {
@@ -274,6 +308,9 @@ func TestParseEdit(t *testing.T) {
 		{"apagar extra", []string{"rec:-"}, Entry{Extras: "rec:-"}, false},
 		{"titulo comeca com traco", []string{"-1", "ponto"}, Entry{Title: "-1 ponto"}, false},
 		{"titulo e apagar prazo", []string{"revisar", "due:-", "pri:A"}, Entry{Title: "revisar", Due: "-", Priority: "A"}, false},
+		{"so descricao", []string{"--", "conforme", "o", "slide"}, Entry{Description: "conforme o slide"}, false},
+		{"apagar descricao", []string{"--", "-"}, Entry{Description: "-"}, false},
+		{"descricao e marca depois", []string{"--", "slide", "--", "pri:B"}, Entry{Description: "slide", Priority: "B"}, false},
 
 		{"sem argumentos", []string{}, Entry{}, true},
 		{"apagar titulo", []string{"-"}, Entry{}, true},
@@ -282,6 +319,7 @@ func TestParseEdit(t *testing.T) {
 		{"prioridade e apagar", []string{"pri:A", "pri:-"}, Entry{}, true},
 		{"estimativa e apagar", []string{"est:30", "est:-"}, Entry{}, true},
 		{"palavra vazia", []string{""}, Entry{}, true},
+		{"separador sem nada", []string{"--"}, Entry{}, true},
 	}
 
 	for _, tc := range tests {

@@ -24,7 +24,7 @@ type scanner interface {
 	Scan(dest ...any) error
 }
 
-const selectTasks = `SELECT tasks.id, tasks.title,
+const selectTasks = `SELECT tasks.id, tasks.title, COALESCE(tasks.description, ''),
         COALESCE(tasks.priority, ''), COALESCE(tasks.due, ''),
         COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
         COALESCE(tasks.project_id, 0), COALESCE(tasks.parent_id, 0),
@@ -37,7 +37,7 @@ const selectTasks = `SELECT tasks.id, tasks.title,
 
 func scanTask(s scanner) (task.Task, error) {
 	var v task.Task
-	err := s.Scan(&v.ID, &v.Title,
+	err := s.Scan(&v.ID, &v.Title, &v.Description,
 		&v.Priority, &v.Due, &v.EstimateMin,
 		&v.SubjectID, &v.ProjectID, &v.ParentID,
 		&v.Extras, &v.DoneAt, &v.CreatedAt,
@@ -78,9 +78,10 @@ func Open(path string) (*sql.DB, error) {
 }
 
 func AddTask(db *sql.DB, t task.Task) (int64, error) {
-	res, err := db.Exec(`INSERT INTO tasks (title, priority, due, estimate_min, subject_id, project_id, extras)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+	res, err := db.Exec(`INSERT INTO tasks (title, description, priority, due, estimate_min, subject_id, project_id, extras)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		t.Title,
+		nullString(t.Description),
 		nullString(t.Priority),
 		nullString(t.Due),
 		nullInt(t.EstimateMin),

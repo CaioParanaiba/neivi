@@ -4,6 +4,7 @@ package task
 type Task struct {
 	ID          int64
 	Title       string
+	Description string
 	Priority    string
 	Due         string
 	EstimateMin int64

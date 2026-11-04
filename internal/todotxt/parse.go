@@ -11,11 +11,24 @@ func parse(args []string, today time.Time) (Entry, error) {
 	var t Entry
 	var err error
 
-	var title []string
+	var title, desc []string
+	var inDesc bool
 	for _, v := range args {
 		if len(v) == 0 {
 			return Entry{}, fmt.Errorf("sem entrada")
 		}
+
+		//valida se os argumentos sao da descricao ou nao
+		if v == "--" {
+			inDesc = !inDesc
+			continue
+		}
+
+		if inDesc {
+			desc = append(desc, v)
+			continue
+		}
+
 		switch v[0] {
 		case '@':
 			if t.SubjectCode != "" {
@@ -102,6 +115,7 @@ func parse(args []string, today time.Time) (Entry, error) {
 	}
 
 	t.Title = strings.Join(title, " ")
+	t.Description = strings.Join(desc, " ")
 
 	return t, nil
 }

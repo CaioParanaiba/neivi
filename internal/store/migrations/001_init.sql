@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS projects (
 CREATE TABLE IF NOT EXISTS tasks (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
+    description TEXT,
     priority TEXT CHECK ( priority IN ('A', 'B', 'C', 'D') ),
     due TEXT,
     estimate_min INTEGER CHECK (estimate_min > 0),
