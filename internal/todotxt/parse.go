@@ -7,8 +7,9 @@ import (
 	"time"
 )
 
-func ParseTask(args []string, today time.Time) (Entry, error) {
+func parse(args []string, today time.Time) (Entry, error) {
 	var t Entry
+	var err error
 
 	var title []string
 	for _, v := range args {
@@ -46,7 +47,7 @@ func ParseTask(args []string, today time.Time) (Entry, error) {
 						return Entry{}, fmt.Errorf("prioridade vazia")
 					}
 					p := strings.ToUpper(value)
-					if len(value) > 1 || (p != "A" && p != "B" && p != "C") {
+					if len(value) > 1 || (p != "A" && p != "B" && p != "C" && p != "-") {
 						return Entry{}, fmt.Errorf("prioridade %s invalida", value)
 					}
 
@@ -55,20 +56,33 @@ func ParseTask(args []string, today time.Time) (Entry, error) {
 					if t.EstimateMin != 0 {
 						return Entry{}, fmt.Errorf("multiplas estimativas")
 					}
-					est, err := estTime(value)
-					if err != nil {
-						return Entry{}, fmt.Errorf("tempo invalido: %w", err)
+
+					var est int64
+
+					if value == "-" {
+						est = -1
+					} else {
+						est, err = estTime(value)
+						if err != nil {
+							return Entry{}, fmt.Errorf("tempo invalido: %w", err)
+						}
 					}
 
 					t.EstimateMin = est
 				case "due":
+					var day string
 					if t.Due != "" {
 						return Entry{}, fmt.Errorf("multiplas prazos")
 					}
-					day, err := dueDate(value, today)
-					if err != nil {
-						return Entry{}, fmt.Errorf("data: %w", err)
+					if value == "-" {
+						day = "-"
+					} else {
+						day, err = dueDate(value, today)
+						if err != nil {
+							return Entry{}, fmt.Errorf("data: %w", err)
+						}
 					}
+
 					t.Due = day
 
 				case "rec", "esf", "top", "rep", "aula", "gh", "av", "prova":
@@ -87,13 +101,25 @@ func ParseTask(args []string, today time.Time) (Entry, error) {
 
 	}
 
-	stitle := strings.Join(title, " ")
+	t.Title = strings.Join(title, " ")
 
-	if len(strings.TrimSpace(stitle)) == 0 {
-		return Entry{}, fmt.Errorf("tarefa sem titulo")
+	return t, nil
+}
+
+func ParseTask(args []string, today time.Time) (Entry, error) {
+	t, err := parse(args, today)
+	if err != nil {
+		return Entry{}, err
 	}
 
-	t.Title = stitle
+	//obrigatorio
+	if len(strings.TrimSpace(t.Title)) == 0 {
+		return Entry{}, fmt.Errorf("tarefa sem titulo")
+	}
+	//opcionais, verificar "-" e -1 (de remocao)
+	if t.hasClear() {
+		return Entry{}, fmt.Errorf(`"-" so vale no edit`)
+	}
 
 	return t, nil
 }

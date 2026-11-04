@@ -9,3 +9,8 @@ type Entry struct {
 	ProjectCode string
 	Extras      string
 }
+
+func (e Entry) hasClear() bool {
+	return e.Priority == "-" || e.Due == "-" ||
+		e.EstimateMin == -1 || e.SubjectCode == "-" || e.ProjectCode == "-"
+}
