@@ -226,6 +226,11 @@ func TestParseTask(t *testing.T) {
 		{"dois prazos", []string{"tarefa", "due:hoje", "due:amanha"}, Entry{}, true},
 		{"prazo invalido", []string{"tarefa", "due:31/02/26"}, Entry{}, true},
 		{"prazo vazio", []string{"tarefa", "due:"}, Entry{}, true},
+		{"apagar prioridade no add", []string{"tarefa", "pri:-"}, Entry{}, true},
+		{"apagar prazo no add", []string{"tarefa", "due:-"}, Entry{}, true},
+		{"apagar estimativa no add", []string{"tarefa", "est:-"}, Entry{}, true},
+		{"apagar disciplina no add", []string{"tarefa", "@-"}, Entry{}, true},
+		{"apagar projeto no add", []string{"tarefa", "+-"}, Entry{}, true},
 	}
 
 	for _, tc := range tests {
@@ -244,6 +249,57 @@ func TestParseTask(t *testing.T) {
 			}
 			if got != tc.want {
 				t.Errorf("ParseTask(%q)\n got: %+v\nwant: %+v", tc.in, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestParseEdit(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      []string
+		want    Entry
+		wantErr bool
+	}{
+		{"so prioridade", []string{"pri:B"}, Entry{Priority: "B"}, false},
+		{"so titulo", []string{"Lista", "3", "de", "ED"}, Entry{Title: "Lista 3 de ED"}, false},
+		{"disciplina e prazo", []string{"@BD", "due:sex"}, Entry{SubjectCode: "BD", Due: "2026-11-06"}, false},
+		{"so estimativa", []string{"est:30"}, Entry{EstimateMin: 30}, false},
+		{"so extra", []string{"rec:2"}, Entry{Extras: "rec:2"}, false},
+		{"apagar prioridade", []string{"pri:-"}, Entry{Priority: "-"}, false},
+		{"apagar prazo", []string{"due:-"}, Entry{Due: "-"}, false},
+		{"apagar estimativa", []string{"est:-"}, Entry{EstimateMin: -1}, false},
+		{"apagar disciplina", []string{"@-"}, Entry{SubjectCode: "-"}, false},
+		{"apagar projeto", []string{"+-"}, Entry{ProjectCode: "-"}, false},
+		{"apagar extra", []string{"rec:-"}, Entry{Extras: "rec:-"}, false},
+		{"titulo comeca com traco", []string{"-1", "ponto"}, Entry{Title: "-1 ponto"}, false},
+		{"titulo e apagar prazo", []string{"revisar", "due:-", "pri:A"}, Entry{Title: "revisar", Due: "-", Priority: "A"}, false},
+
+		{"sem argumentos", []string{}, Entry{}, true},
+		{"apagar titulo", []string{"-"}, Entry{}, true},
+		{"prioridade invalida", []string{"pri:Z"}, Entry{}, true},
+		{"prazo invalido", []string{"due:31/02/26"}, Entry{}, true},
+		{"prioridade e apagar", []string{"pri:A", "pri:-"}, Entry{}, true},
+		{"estimativa e apagar", []string{"est:30", "est:-"}, Entry{}, true},
+		{"palavra vazia", []string{""}, Entry{}, true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ParseEdit(tc.in, today)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("ParseEdit(%q): esperava erro, veio %+v", tc.in, got)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("ParseEdit(%q): erro inesperado: %v", tc.in, err)
+			}
+			if got != tc.want {
+				t.Errorf("ParseEdit(%q)\n got: %+v\nwant: %+v", tc.in, got, tc.want)
 			}
 		})
 	}

@@ -59,7 +59,7 @@ func parse(args []string, today time.Time) (Entry, error) {
 
 					var est int64
 
-					if value == "-" {
+					if value == "-" || value == "0" {
 						est = -1
 					} else {
 						est, err = estTime(value)
@@ -119,6 +119,24 @@ func ParseTask(args []string, today time.Time) (Entry, error) {
 	//opcionais, verificar "-" e -1 (de remocao)
 	if t.hasClear() {
 		return Entry{}, fmt.Errorf(`"-" so vale no edit`)
+	}
+
+	return t, nil
+}
+
+func ParseEdit(args []string, today time.Time) (Entry, error) {
+	t, err := parse(args, today)
+	if err != nil {
+		return Entry{}, err
+	}
+
+	//titulo nao remove
+	if t.Title == "-" {
+		return Entry{}, fmt.Errorf("titulo nao pode ser removido")
+	}
+
+	if t.isEmpty() {
+		return Entry{}, fmt.Errorf("edicao vazia")
 	}
 
 	return t, nil
