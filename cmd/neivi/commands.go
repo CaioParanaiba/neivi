@@ -127,6 +127,97 @@ func runLs(db *sql.DB, args []string) {
 	w.Flush()
 }
 
+// testar fazer uma funcao bonita ksksks
+func applyText(field *string, v string) {
+	if v == "-" {
+		*field = ""
+	} else if v != "" {
+		*field = v
+	}
+}
+
+func applyEdit(db *sql.DB, t *task.Task, e todotxt.Entry) {
+	applyText(&t.Title, e.Title)
+	applyText(&t.Description, e.Description)
+	applyText(&t.Priority, e.Priority)
+	applyText(&t.Due, e.Due)
+
+	if e.EstimateMin == -1 {
+		t.EstimateMin = 0
+	} else if e.EstimateMin != 0 {
+		t.EstimateMin = e.EstimateMin
+	}
+
+	sCode := e.SubjectCode
+	pCode := e.ProjectCode
+	if sCode == "-" {
+		sCode = ""
+	}
+	if pCode == "-" {
+		pCode = ""
+	}
+
+	idS, idP, err := resolveCode(db, sCode, pCode)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	if e.SubjectCode == "-" {
+		t.SubjectID = 0
+	} else if e.SubjectCode != "" {
+		t.SubjectID = idS
+	}
+
+	if e.ProjectCode == "-" {
+		t.ProjectID = 0
+	} else if e.ProjectCode != "" {
+		t.ProjectID = idP
+	}
+}
+
+func runEdit(db *sql.DB, args []string) {
+
+	if len(args) < 2 {
+		usage()
+		os.Exit(1)
+	}
+
+	id, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", args[0], err)
+		os.Exit(1)
+	}
+
+	t, err := store.GetTask(db, id)
+	if errors.Is(err, sql.ErrNoRows) {
+		fmt.Fprintf(os.Stderr, "erro: tarefa %d nao existe\n", id)
+		os.Exit(1)
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	args = args[1:]
+
+	entry, err := todotxt.ParseEdit(args, time.Now())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	applyEdit(db, &t, entry)
+
+	err = store.UpdateTask(db, t)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(os.Stdout, "tarefa %d editada\n", id)
+}
+
 func runDoneTasks(db *sql.DB, args []string) {
 
 	if len(args) == 0 {

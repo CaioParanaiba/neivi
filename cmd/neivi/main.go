@@ -38,6 +38,8 @@ func main() {
 		runReopenTasks(db, os.Args[2:])
 	case "rm":
 		runRmTasks(db, os.Args[2:])
+	case "edit":
+		runEdit(db, os.Args[2:])
 	default:
 		fmt.Fprintln(os.Stderr, "Comando", os.Args[1], "eh desconhecido")
 		usage()

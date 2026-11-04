@@ -126,6 +126,25 @@ func ListTasks(db *sql.DB) ([]task.Task, error) {
 	return lista, nil
 }
 
+func UpdateTask(db *sql.DB, t task.Task) error {
+	_, err := db.Exec(`UPDATE tasks SET title = ?, description = ?, priority = ?, due = ?,
+		estimate_min = ?, subject_id = ?, project_id = ?, extras = ? WHERE id = ?`,
+		t.Title,
+		nullString(t.Description),
+		nullString(t.Priority),
+		nullString(t.Due),
+		nullInt(t.EstimateMin),
+		nullInt(t.SubjectID),
+		nullInt(t.ProjectID),
+		nullString(t.Extras),
+		t.ID)
+	if err != nil {
+		return fmt.Errorf("atualizar tarefa %d: %w", t.ID, err)
+	}
+
+	return nil
+}
+
 func SubjectIDByCode(db *sql.DB, code string) (int64, error) {
 	var id int64
 	err := db.QueryRow("SELECT id FROM subjects WHERE code = ?", code).Scan(&id)
