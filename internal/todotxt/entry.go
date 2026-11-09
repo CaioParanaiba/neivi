@@ -8,7 +8,6 @@ type Entry struct {
 	EstimateMin int64
 	SubjectCode string
 	ProjectCode string
-	Extras      string
 }
 
 func (e Entry) hasClear() bool {
@@ -18,5 +17,5 @@ func (e Entry) hasClear() bool {
 
 func (e Entry) isEmpty() bool {
 	return e.Title == "" && e.Priority == "" && e.Due == "" &&
-		e.EstimateMin == 0 && e.SubjectCode == "" && e.ProjectCode == "" && e.Extras == "" && e.Description == ""
+		e.EstimateMin == 0 && e.SubjectCode == "" && e.ProjectCode == "" && e.Description == ""
 }

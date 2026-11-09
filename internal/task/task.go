@@ -10,8 +10,6 @@ type Task struct {
 	EstimateMin int64
 	SubjectID   int64
 	ProjectID   int64
-	ParentID    int64
-	Extras      string
 	DoneAt      string
 	CreatedAt   string
 	SubjectCode string

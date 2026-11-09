@@ -19,27 +19,16 @@ CREATE TABLE IF NOT EXISTS tasks (
     estimate_min INTEGER CHECK (estimate_min > 0),
     subject_id INTEGER REFERENCES subjects(id),
     project_id INTEGER REFERENCES projects(id),
-    parent_id INTEGER REFERENCES tasks(id),
-    extras TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     done_at TEXT
-);
-
-CREATE TABLE IF NOT EXISTS checklist_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
-    text TEXT NOT NULL,
-    done INTEGER NOT NULL CHECK (done IN (0,1)) DEFAULT (0)
 );
 
 CREATE TABLE IF NOT EXISTS habits (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    kind TEXT NOT NULL CHECK (kind IN ('bool','count')),
-    goal INTEGER CHECK (goal > 0),
+    goal INTEGER NOT NULL CHECK (goal > 0) DEFAULT (1),
     freq_kind TEXT NOT NULL CHECK (freq_kind IN ('daily','weekdays','times_per_week')),
     freq_value TEXT,
-    slack INTEGER NOT NULL CHECK (slack >= 0) DEFAULT (0),
     created_at TEXT NOT NULL DEFAULT (datetime('now','localtime')),
     archived INTEGER NOT NULL CHECK (archived IN (0,1)) DEFAULT (0)
 );

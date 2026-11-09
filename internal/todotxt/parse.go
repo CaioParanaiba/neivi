@@ -60,7 +60,7 @@ func parse(args []string, today time.Time) (Entry, error) {
 						return Entry{}, fmt.Errorf("prioridade vazia")
 					}
 					p := strings.ToUpper(value)
-					if len(value) > 1 || (p != "A" && p != "B" && p != "C" && p != "-") {
+					if len(value) > 1 || (p != "A" && p != "B" && p != "C" && p != "D" && p != "-") {
 						return Entry{}, fmt.Errorf("prioridade %s invalida", value)
 					}
 
@@ -98,12 +98,6 @@ func parse(args []string, today time.Time) (Entry, error) {
 
 					t.Due = day
 
-				case "rec", "esf", "top", "rep", "aula", "gh", "av", "prova":
-					// chaves do Ganbatte, guardadas como vieram
-					if t.Extras != "" {
-						t.Extras += " "
-					}
-					t.Extras += v
 				default:
 					title = append(title, v)
 				}

@@ -27,8 +27,7 @@ type scanner interface {
 const selectTasks = `SELECT tasks.id, tasks.title, COALESCE(tasks.description, ''),
         COALESCE(tasks.priority, ''), COALESCE(tasks.due, ''),
         COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
-        COALESCE(tasks.project_id, 0), COALESCE(tasks.parent_id, 0),
-        COALESCE(tasks.extras, ''), COALESCE(tasks.done_at, ''),
+        COALESCE(tasks.project_id, 0), COALESCE(tasks.done_at, ''),
         tasks.created_at, COALESCE(subjects.code, ''),
         COALESCE(projects.code, '')
         FROM tasks
@@ -39,8 +38,8 @@ func scanTask(s scanner) (task.Task, error) {
 	var v task.Task
 	err := s.Scan(&v.ID, &v.Title, &v.Description,
 		&v.Priority, &v.Due, &v.EstimateMin,
-		&v.SubjectID, &v.ProjectID, &v.ParentID,
-		&v.Extras, &v.DoneAt, &v.CreatedAt,
+		&v.SubjectID, &v.ProjectID,
+		&v.DoneAt, &v.CreatedAt,
 		&v.SubjectCode, &v.ProjectCode)
 	return v, err
 }
@@ -78,16 +77,15 @@ func Open(path string) (*sql.DB, error) {
 }
 
 func AddTask(db *sql.DB, t task.Task) (int64, error) {
-	res, err := db.Exec(`INSERT INTO tasks (title, description, priority, due, estimate_min, subject_id, project_id, extras)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+	res, err := db.Exec(`INSERT INTO tasks (title, description, priority, due, estimate_min, subject_id, project_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		t.Title,
 		nullString(t.Description),
 		nullString(t.Priority),
 		nullString(t.Due),
 		nullInt(t.EstimateMin),
 		nullInt(t.SubjectID),
-		nullInt(t.ProjectID),
-		nullString(t.Extras))
+		nullInt(t.ProjectID))
 	if err != nil {
 		return 0, fmt.Errorf("inserir tarefa: %w", err)
 	}
@@ -128,7 +126,7 @@ func ListTasks(db *sql.DB) ([]task.Task, error) {
 
 func UpdateTask(db *sql.DB, t task.Task) error {
 	_, err := db.Exec(`UPDATE tasks SET title = ?, description = ?, priority = ?, due = ?,
-		estimate_min = ?, subject_id = ?, project_id = ?, extras = ? WHERE id = ?`,
+		estimate_min = ?, subject_id = ?, project_id = ? WHERE id = ?`,
 		t.Title,
 		nullString(t.Description),
 		nullString(t.Priority),
@@ -136,7 +134,6 @@ func UpdateTask(db *sql.DB, t task.Task) error {
 		nullInt(t.EstimateMin),
 		nullInt(t.SubjectID),
 		nullInt(t.ProjectID),
-		nullString(t.Extras),
 		t.ID)
 	if err != nil {
 		return fmt.Errorf("atualizar tarefa %d: %w", t.ID, err)
