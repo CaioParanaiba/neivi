@@ -1,7 +1,10 @@
 # neivi: especificação
 
-Documento vivo. Versão de 01/11/2026, cobrindo o v0.1 em detalhe e as fases
-seguintes em linhas gerais.
+Documento vivo. Versão de 09/11/2026.
+
+**O que o neivi faz e por quê** (escopo, cenários de uso, regras, decisões e o
+que fica fora de cada versão) está em [requisitos.md](requisitos.md). Este
+documento descreve **como**: sintaxe, arquitetura, dados e comandos.
 
 **Sobre este documento:** a especificação é escrita e mantida principalmente
 com uma IA (Claude). As ideias e as decisões são minhas; a IA ajuda a
@@ -25,7 +28,7 @@ repetitiva para poupar tempo, nunca funcionalidade nova.
    dados.
 4. **Partes que conversam.** A ideia de longo prazo é um hub: concluir algo num
    lugar reflete nos outros (resolver um problema no Codeforces marca o hábito,
-   responder um e-mail fecha a tarefa). Isso vem aos poucos, no ritmo das fases.
+   responder um e-mail fecha a tarefa). Isso vem aos poucos.
 5. **Ritmo real.** O projeto avança de 2 a 5 horas por semana. Escopo de cada
    versão pequeno o bastante para terminar.
 
@@ -33,35 +36,34 @@ repetitiva para poupar tempo, nunca funcionalidade nova.
 
 O neivi substitui o Ganbatte, um to-do gamificado anterior (servidor Python +
 página web), que passa para outro mantenedor na versão 1.0. O neivi é escrito do
-zero, em Go, com CLI e TUI em vez de web.
+zero, em Go, com CLI e, depois, TUI em vez de web.
 
-A substituição é gradual: o Ganbatte continua em uso nas partes que o neivi
-ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
-(seção 6).
+A troca é um corte seco: quando o v0.1 estiver pronto, os dados do Ganbatte são
+importados uma vez e ele é desligado (seção 6).
 
-## 3. Decisões fechadas
+## 3. Decisões técnicas
 
 - **Linguagem:** Go.
 - **Interface:** CLI e TUI no mesmo binário. O v0.1 é só CLI; a TUI (Bubble Tea
-  + Lip Gloss) entra no v0.2.
+  + Lip Gloss) entra depois.
 - **Arquitetura:** um núcleo (lógica + dados) usado pela CLI e, depois, pela TUI.
   Nenhuma regra de negócio dentro dos comandos.
-- **Onde roda:** no PC (Arch Linux). Servidor em casa e celular só no v1.0.
-- **Dados:** SQLite é a fonte da verdade. O todo.txt é gerado a partir do banco
-  (exportação de mão única) e nunca é lido de volta, exceto na importação.
-- **Sem inbox separada:** tudo fica na lista geral; "sem disciplina e sem
-  projeto" é um filtro.
-- **Prioridade:** A/B/C internamente. O rótulo exibido é só um mapeamento.
-- **Subtarefas:** tarefa filha (um nível só) e checklist simples dentro da tarefa.
-- **Disciplinas e projetos são entidades** com tabela própria desde o v0.1
-  (código curto, como `BD`, e nome opcional). O código é o que vai depois do `@`
-  ou do `+`. Os detalhes (professor, avaliações, status, pasta) vêm no v0.3 e no
-  v0.4.
+- **Onde roda:** no PC (Arch Linux).
+- **Dados:** SQLite é a fonte da verdade e o único lugar onde os dados existem.
+  Não há exportação para todo.txt; o todo.txt só é lido na importação.
+- **Sem inbox separada:** a tarefa incompleta (sem prioridade) é deduzida, e
+  "sem disciplina e sem projeto" é um filtro.
+- **Prioridade:** A, B, C e D. D é uma prioridade definida (baixa), diferente de
+  vazio (ainda não decidida).
+- **Disciplinas e projetos são entidades** com tabela própria (código curto,
+  como `BD`, e nome opcional). O código é o que vai depois do `@` ou do `+`.
 - **Sintaxe própria, não a do todo.txt:** símbolo para o que é cadastrado
   (`@` disciplina, `+` projeto); chave para características da tarefa (`pri:`,
   `due:`, `est:`). Tudo em qualquer posição da linha. Sem tags livres e sem
   contextos: só disciplinas e projetos cadastrados.
-- **Gamificação leve:** streaks e estatísticas. Nada de XP, cartas ou mundo.
+- **Deduzir em vez de guardar:** tarefa nova, tarefa incompleta, tipo do
+  projeto e, no futuro, a sequência dos hábitos saem dos dados, sem campo
+  próprio.
 - **Idioma da CLI:** comandos e flags em inglês; tudo o que aparece na tela
   (mensagens, erros, ajuda) em português.
 - **Biblioteca de CLI:** pacote `flag` da biblioteca padrão, com os subcomandos
@@ -72,21 +74,11 @@ ainda não cobre, e os dois convivem pelo mesmo todo.txt durante a transição
 - **Idioma do código:** nomes de pacotes, tipos, funções, tabelas e colunas em
   inglês. Comentários e documentação em português.
 
-## 4. Escopo do v0.1
+## 4. Sintaxe da tarefa
 
-**Critério de pronto:** o neivi substitui o uso básico do todo.txt no dia a dia,
-com hábitos, e tem backup diário funcionando.
-
-### 4.1 Tarefas
-
-- Campos: título; descrição (opcional); prioridade A/B/C (opcional); prazo
+- **Campos:** título; descrição (opcional); prioridade A–D (opcional); prazo
   (opcional); disciplina (opcional); projeto (opcional); estimativa em minutos
-  (opcional); datas de criação e de conclusão.
-- A data de conclusão é salva desde o v0.1, porque o histórico e as estatísticas
-  das fases futuras dependem dela.
-- **Tarefa filha:** uma tarefa com `parent_id`. Um nível só.
-- **Checklist:** itens de texto dentro da tarefa, cada um marcado ou não, sem
-  prazo próprio.
+  (opcional); datas de criação e de conclusão (gravadas pelo sistema).
 - **Entrada:** o título primeiro, as marcas em qualquer posição:
 
   ```
@@ -98,7 +90,7 @@ com hábitos, e tem backup diário funcionando.
   |---|---|
   | `@BD` | disciplina (cadastrada) |
   | `+neivi` | projeto (cadastrado) |
-  | `pri:A` | prioridade A, B ou C |
+  | `pri:A` | prioridade A, B, C ou D |
   | `due:05/11/26` | prazo |
   | `est:30m` | estimativa |
   | `-- texto` | descrição |
@@ -109,13 +101,11 @@ com hábitos, e tem backup diário funcionando.
   ou quatro dígitos (`26` ou `2026`). Sem ano (`05/11`), vale a próxima
   ocorrência da data: hoje conta como hoje; data que já passou vai para o ano
   seguinte. `29/02` sem ano só vale se esse ano for bissexto; senão é erro.
-  No banco e no export, sempre ISO (`2026-11-05`). Na tela, `dd/mm`.
+  No banco, sempre ISO (`2026-11-05`). Na tela, `dd/mm`.
 - `est:` aceita minutos e horas: `30m`, `1h`, `1h15`, `90`. Guardado em minutos.
 - `pri:` aceita minúscula (`pri:a` vira `A`).
-- **Chaves do Ganbatte** que o neivi não usa (`rec:`, `esf:`, `top:`, `rep:`,
-  `aula:`, `gh:`, `av:`, `prova:`) são guardadas em `extras` e voltam iguais na
-  exportação. Nada se perde na importação. Qualquer outra palavra com `:`
-  (`verificar:`, `10:30`, links) faz parte do título.
+- **Outras palavras com `:`** (`aula:3`, `verificar:`, `10:30`, links) fazem
+  parte do título.
 - **Aspas opcionais:** o texto depois do comando é juntado com espaços. No zsh,
   o alias `alias neivi='noglob neivi'` deixa `?` e `*` passarem sem aspas; aspas
   só para caracteres como `(`, `)`, `'`, `&`, `;`.
@@ -136,8 +126,7 @@ com hábitos, e tem backup diário funcionando.
 - **Edição parcial:** a edição usa a mesma sintaxe da entrada, e só muda o que
   aparece no texto; o resto fica como está. Texto solto vira o título novo;
   sem texto solto, o título não muda. O valor `-` apaga o campo (`pri:-`,
-  `due:-`, `est:-`, `@-`, `+-`, `-- -`). O título não pode ser apagado. Extras
-  não são editáveis no v0.1.
+  `due:-`, `est:-`, `@-`, `+-`, `-- -`). O título não pode ser apagado.
 
   ```
   neivi edit 1 pri:B
@@ -145,134 +134,104 @@ com hábitos, e tem backup diário funcionando.
   neivi edit 1 due:-
   ```
 
-### 4.2 Visão do dia
-
-- Mostra tarefas com prazo hoje, atrasadas e hábitos do dia.
-- Ordem padrão: prioridade e depois prazo, com opção de ordenar só por prazo. É
-  só uma função de ordenação.
-
-### 4.3 Hábitos
-
-- Tipos de marcação: feito/não feito e quantidade (meta, por exemplo 3
-  problemas). O tipo tempo entra com o cronômetro, no v0.2.
-- Frequências: todo dia, X vezes por semana e dias específicos da semana.
-- Dias de folga por hábito (quantos dias pode pular sem zerar a sequência).
-- Streak calculado a partir dos registros, nunca guardado como número solto.
-
-### 4.4 todo.txt
-
-- **Exportação:** gera `todo.txt` e `done.txt` a partir do banco, no formato
-  padrão. O caminho é configurável (padrão: `~/.todo/`).
-- **Importação:** lê um todo.txt (e opcionalmente o done.txt) para o banco. Usada
-  na migração inicial e, durante a transição, para trazer tarefas novas criadas
-  fora do neivi.
-- Não existe sincronização automática nos dois sentidos.
-- **Conversões** entre a sintaxe do neivi e a do todo.txt (que o Ganbatte e a
-  automação da manhã leem):
-
-  | neivi | todo.txt |
-  |---|---|
-  | `pri:A` | `(A)` no começo da linha |
-  | `@BD` | `+fac.BD` |
-  | `+neivi` | `+neivi` |
-  | prazo | `due:2026-11-05` (ISO) |
-  | (guardado em `extras`) | `@pc` e outros contextos do Ganbatte |
-  | descrição | (não exportada: o todo.txt não tem lugar para ela) |
-
-  A exportação converte da esquerda para a direita; a importação, da direita
-  para a esquerda.
-
-## 5. Operações do v0.1
+## 5. Comandos
 
 Comandos já definidos:
 
 | Comando | Faz |
 |---|---|
 | `neivi add <texto>` | cria uma tarefa |
-| `neivi ls` | lista as tarefas |
+| `neivi ls [filtros] [palavras]` | lista as tarefas (ver abaixo) |
+| `neivi today [due]` | resumo diário (ver abaixo) |
+| `neivi show <id>` | mostra todos os campos de uma tarefa |
 | `neivi done <id>...` | conclui uma ou mais tarefas |
 | `neivi reopen <id>...` | reabre uma ou mais tarefas concluídas |
-| `neivi edit <id> <texto>` | muda só os campos que aparecem no texto (seção 4.1) |
+| `neivi edit <id> <texto>` | muda só os campos que aparecem no texto (seção 4) |
 | `neivi rm <id>...` | remove uma ou mais tarefas, pedindo confirmação de cada uma |
 | `neivi subject add <código> [nome]` | cadastra uma disciplina |
 | `neivi subject ls` | lista as disciplinas |
 | `neivi project add <código> [nome]` | cadastra um projeto |
 | `neivi project ls` | lista os projetos |
 
-Os demais seguem o formato da seção 3 e entram aqui quando forem definidos. O
-que a CLI precisa permitir:
+**Listagem.** Sem nada, mostra as pendentes na ordem padrão. Filtros e
+palavras usam a mesma sintaxe da entrada e se combinam:
 
-- Cadastrar e listar disciplinas e projetos (código e nome opcional).
-- Criar tarefa a partir de uma linha na sintaxe do neivi.
-- Listar tarefas com filtros (disciplina, projeto, sem disciplina e
-  sem projeto, atrasadas); por padrão só as pendentes.
-- Ver os detalhes de uma tarefa pelo id: todos os campos, checklist (numerado
-  na tela, na ordem de criação) e filhas. A listagem mostra só o resumo de cada
-  tarefa, com o id para usar nos outros comandos.
-- Ver o dia (seção 4.2).
-- Concluir e reabrir (vários ids de uma vez). Concluir o que já está concluído,
-  ou reabrir o que está pendente, só avisa. Id inexistente é erro.
-- Editar só os campos que aparecem no texto, mantendo id, datas, filhas e
-  checklist.
-- Remover (vários ids de uma vez), pedindo confirmação de cada uma (`[s/N]`;
-  só `s` remove, Enter cancela).
-- Criar tarefa filha.
-- Adicionar e marcar itens do checklist.
-- Criar hábito, listar hábitos com streak e status de hoje, registrar o hábito
-  no dia (com valor, para hábitos de quantidade).
-- Exportar e importar todo.txt.
+| Parte | Efeito |
+|---|---|
+| `@BD`, `+neivi`, `pri:A` | só essa disciplina, projeto ou prioridade |
+| `@-`, `+-` | sem disciplina, sem projeto (`@- +-` = tarefas soltas) |
+| `all` | inclui as concluídas, depois das pendentes |
+| `done` | só as concluídas |
+| `late` | só as atrasadas |
+| `due` | ordena só por prazo |
+| `desc` | mostra a descrição embaixo de cada tarefa, recuada |
+| outra palavra | busca no título |
 
-## 6. Transição com o Ganbatte
+- Mesmo tipo é "ou" (`@BD @ED` = BD ou ED); tipos diferentes são "e"
+  (`@BD pri:A`). Disciplina ou projeto que não existe é erro.
+- `all`, `done`, `late`, `due` e `desc` são reservadas: não servem para buscar
+  no título.
+- Sem `desc`, a tarefa com descrição ganha um `…` depois do título.
+- Ordens (requisitos D-04 e D-28): padrão = prioridade (A–D, sem prioridade por
+  último) → prazo (mais perto primeiro, sem prazo por último) → estimativa
+  (mais rápidas primeiro) → id. Com `due` e no resumo diário: prazo →
+  prioridade → estimativa → id.
+- Filtros e ordenação ficam fora da CLI (store e `internal/task`), para a TUI
+  usar os mesmos.
 
-Durante a transição, o Ganbatte e o neivi convivem no mesmo repositório do todo
-(`~/.todo`, remoto `CaioParanaiba/todo`). O Ganbatte escreve no `todo.txt`
-(sugestões de aula, tarefas criadas por lá); o neivi escreve no banco.
+**Resumo diário (`today`).** Três blocos de tarefas pendentes, nesta ordem
+(requisitos D-27): atrasadas, urgentes (prazo hoje, qualquer prioridade) e
+importantes (prioridade A sem prazo). Os hábitos do dia entram abaixo. É a
+mesma função de ordenação do `ls`.
 
-O risco: a exportação reescreve o `todo.txt` inteiro a partir do banco e
-apagaria o que o Ganbatte gravou desde o último export. Por isso:
+Os demais comandos seguem o formato da seção 3 e entram aqui quando forem
+definidos, fatia a fatia. O que ainda falta definir:
 
-- **Enquanto o Ganbatte estiver ativo, o export é manual** e só roda depois de
-  reconciliar: trazer para o banco as tarefas novas e as conclusões feitas no
-  Ganbatte. A reconciliação é um procedimento manual, fora do código.
-- **Uma tarefa criada no neivi é concluída no neivi.**
-- Caçadas, marcos e demais dados do `estado.json` do Ganbatte não são migrados
-  no v0.1.
+- Campos de projeto da D-06 (descrição, GitHub, situação, disciplina, pasta) no
+  `project add` e o panorama do projeto (C9).
+- Criar hábito, listar hábitos com o status de hoje e registrar o hábito em
+  hoje ou ontem, com valor.
+- Importação única do todo.txt e das disciplinas do Ganbatte.
 
-**Ordem de corte:**
+## 6. Corte com o Ganbatte
 
-1. **Ganbatte:** deixa de ser usado quando o neivi cobrir o fluxo de aula
-   (v0.4).
-2. **Resumo da manhã:** uma automação externa lê o `todo.txt` do GitHub todo dia
-   às 5:50. Ela é desligada no v0.5, quando o neivi tiver o próprio resumo do
-   dia com agenda e e-mail.
-3. Depois disso, a exportação deixa de rodar automaticamente. Ela continua
-   existindo como saída em texto puro dos dados.
+Sem convivência: o neivi não escreve no `todo.txt`.
+
+1. Até o v0.1 ficar pronto, o Ganbatte continua sendo usado normalmente.
+2. Com o v0.1 pronto: importar uma vez (tarefas e disciplinas), conferir e
+   desligar o `ganbatte.service`. As chaves do Ganbatte que o neivi não usa
+   (`aula:`, `av:`, `top:`, `gh:`, `esf:`, `rec:`, `rep:`) vão para a descrição
+   da tarefa importada.
+3. A automação externa das 5:50 continua só como gatilho do dia, sem depender
+   do conteúdo do `todo.txt`, até a TUI.
+4. Dados que ficam para o v0.2: avaliações e notas (`hunter/avaliacoes.txt`).
+   Caçadas, marcos e demais dados do `estado.json` não são migrados.
 
 ## 7. Dados e backup
 
-- **Banco:** `~/.local/share/neivi/neivi.db` (padrão XDG).
+- **Banco:** `~/.local/share/neivi/neivi.db` (padrão XDG). Durante o
+  desenvolvimento, `/tmp/neivi-teste.db`.
 - **Configuração:** `~/.config/neivi/`.
 - **Driver:** `modernc.org/sqlite` (Go puro, sem cgo) com `database/sql`.
 - **Esquema:** `001_init.sql` embutido no binário (`embed`), com
-  `CREATE TABLE IF NOT EXISTS`, executado sempre que o banco é aberto. O
-  controle de versões (`PRAGMA user_version`, só aplicar o que falta) entra
-  junto com a primeira migração `002`, quando houver dados reais.
+  `CREATE TABLE IF NOT EXISTS`, executado sempre que o banco é aberto. Enquanto
+  não houver dados reais, o esquema muda direto no `001`. O controle de versões
+  (`PRAGMA user_version`, só aplicar o que falta) entra junto com a primeira
+  migração `002`, depois do corte.
 - **Chaves estrangeiras** ligadas em toda conexão (`_pragma=foreign_keys(1)` no
   caminho do banco).
 
 O banco é o único lugar onde os dados existem, então o backup faz parte do
-critério de pronto do v0.1:
+pronto do v0.1 (requisitos D-29):
 
 1. **Cópia diária consistente** com `VACUUM INTO` (ou `.backup`), nunca `cp` do
    arquivo aberto.
 2. **Retenção:** últimos 7 diários e 4 semanais.
-3. **Fora da máquina:** dump em texto (`sqlite3 neivi.db .dump`) commitado num
-   repositório **privado**. Com o servidor (v1.0), cópia também entre servidor e
-   PC.
+3. **Fora da máquina:** dump em texto (`sqlite3 neivi.db .dump`), que volta
+   para um banco novo sem conversão. Destino em aberto (requisitos Q-19).
 4. **Teste de restauração** pelo menos uma vez por mês, num banco separado.
 
-No v0.1, o backup é um script com timer do systemd. No v0.2, passa a ser feito
-pelo próprio neivi.
+No v0.1, o backup é um script com timer do systemd.
 
 ## 8. Modelo de dados (rascunho)
 
@@ -282,104 +241,78 @@ Nomes de tabelas e colunas em inglês, como no código.
 subjects  (id, code UNIQUE, name UNIQUE NULL)   -- disciplinas: @BD
 projects  (id, code UNIQUE, name UNIQUE NULL)   -- projetos: +neivi
   -- o código é o que vai depois do @ ou do +; sem nome, a CLI grava o código
+  -- a D-06 acrescenta campos ao projeto na fatia de projetos
 
 tasks
   id INTEGER PK AUTOINCREMENT, title TEXT, description TEXT NULL,
-  priority TEXT NULL ('A'|'B'|'C'; o banco aceita 'D', reservado para o futuro),
+  priority TEXT NULL ('A'|'B'|'C'|'D'),
   due TEXT NULL (ISO), estimate_min INTEGER NULL,
   subject_id INTEGER NULL -> subjects.id   (apagar a disciplina é bloqueado)
   project_id INTEGER NULL -> projects.id   (idem)
-  parent_id INTEGER NULL -> tasks.id       (um nível só; apagar a mãe é bloqueado)
-  extras TEXT NULL                         (chaves desconhecidas, como vieram)
   created_at TEXT (ISO), done_at TEXT NULL (ISO)
 
-checklist_items  (id, task_id, text, done INTEGER 0/1)
-  -- task_id com ON DELETE CASCADE: some junto com a tarefa
-  -- ordem = ordem de criação (ORDER BY id); sem reordenar no v0.1
-
 habits
-  id, name, kind ('bool'|'count'), goal INTEGER NULL,
+  id, name, goal INTEGER NOT NULL DEFAULT 1,
   freq_kind ('daily'|'times_per_week'|'weekdays'), freq_value TEXT,
-  slack INTEGER, created_at, archived BOOL
-  -- slack: dias de folga sem zerar a sequência
+  created_at, archived BOOL
+  -- todo hábito tem meta numérica; feito/não feito é meta 1 (requisitos D-02)
 
 habit_logs (habit_id, date DATE, value INTEGER)  -- PK(habit_id, date)
+  -- o valor real, mesmo acima da meta (D-12); a sequência sai daqui no futuro
 ```
 
 ## 9. Estrutura do repositório
 
 ```
 neivi/
-  cmd/neivi/main.go      ponto de entrada
-  internal/task/         struct Task + regras (atrasada, concluir...)
+  cmd/neivi/             ponto de entrada e comandos
+  internal/task/         struct Task + regras (atrasada, ordenação...)
   internal/subject/      struct Subject (disciplina)
   internal/project/      struct Project (projeto)
-  internal/habit/        struct Habit + cálculo de streak com folga
-  internal/todotxt/      parser da sintaxe e exportação
+  internal/habit/        struct Habit + regras dos hábitos
+  internal/todotxt/      parser da sintaxe do neivi (e a leitura do todo.txt
+                         na importação)
   internal/store/        acesso ao SQLite (única camada que fala SQL)
     migrations/001_init.sql   (dentro do store por causa do embed)
-  internal/cli/          comandos; só chamam o núcleo e imprimem
-  docs/SPEC.md
+  docs/SPEC.md, docs/requisitos.md
   README.md .gitignore go.mod
 ```
 
 ## 10. Ordem de implementação do v0.1
 
-Marcos pequenos, um ou mais commits cada.
+Feito:
 
 - **M1.** `.gitignore`, `go mod init`, repositório no GitHub, README.
-- **M2.** Definir os nomes dos comandos. Store: abrir o banco, aplicar
-  migração, inserir e listar tarefas. Primeiros comandos de criar e listar, com
-  título só.
-- **M3.** Cadastro de disciplinas e projetos. Parser da sintaxe do neivi
-  (`@disciplina`, `+projeto`, `pri:`, `due:` com datas `dd/mm/aa`, `est:`,
-  chaves extras) com testes (`go test`).
-- **M4.** Concluir, reabrir, remover e editar.
-- **M5.** Filtros da listagem e visão do dia com ordenação.
-- **M6.** Tarefas filhas e checklist.
-- **M7.** Hábitos: cadastro, marcação, frequências e streak com folga (com
-  testes de datas).
-- **M8.** Exportação e importação com as conversões da seção 4.4 (migração
-  inicial do `~/.todo/todo.txt`).
-- **M9.** Backup diário configurado e testado. Uso real por uma semana em
-  paralelo com o Ganbatte, corrigindo o que incomodar. Tag `v0.1.0`.
+- **M2.** Nomes dos comandos; store; criar e listar tarefas.
+- **M3.** Cadastro de disciplinas e projetos; parser da sintaxe com testes.
+- **M4.** Concluir, reabrir, remover e editar; descrição.
 
-## 11. Fora do v0.1
+Daqui em diante, por fatias (cada uma: requisitos → código → testes):
 
-TUI, cronômetro, recorrências, detalhes de projetos e disciplinas (além do
-nome), fluxo de aula, integrações, assistente, lembretes, servidor e celular.
-Pomodoro está fora do plano.
+1. Tarefas (retroativa).
+2. Disciplinas e projetos (D-06, panorama do projeto).
+3. Hábitos.
+4. Listagem, filtros e resumo diário.
+5. Importação e backup.
+6. Corte com o Ganbatte (seção 6) e uma semana de uso real. Tag `v0.1.0`.
 
-## 12. Roadmap depois do v0.1
-
-| Fase | Conteúdo |
-|---|---|
-| v0.2 | TUI (Bubble Tea + Lip Gloss); cronômetro por tarefa (intervalos de início e fim; um ativo por vez, pergunta antes de pausar; aviso e parada automática depois de X horas; intervalos editáveis; concluir a tarefa para o cronômetro); hábitos de tempo marcados pelo cronômetro; backup feito pelo próprio neivi |
-| v0.3 | Disciplinas: sigla/tag, professor, horários, pasta de material, avaliações com peso e grupos (N1/N2), média por fórmula configurável, segunda chamada; arquivar no fim do semestre. IA monta a lista de avaliações a partir do plano de ensino |
-| v0.4 | Projetos (só o nome é obrigatório; modelos que criam tarefas; status; pasta; notas em Markdown; arquivar + resumo ao encerrar) e fluxo de aula (IA por demanda; tarefas sugeridas aprovadas uma a uma; resumo em HTML). **Fim do uso do Ganbatte** |
-| v0.5 | Integrações por dificuldade: Codeforces e GitHub, depois Google Calendar, depois Gmail. Resumo do dia no neivi. **Desliga a automação externa da manhã e o export automático** |
-| v1.0 | Assistente (propõe e eu aprovo: agenda, e-mails, tarefas, disciplinas); caixa de e-mail com resumo; histórico e estatísticas; recorrências; lembretes no PC; servidor em casa e celular via SSH |
-
-## 13. Decisões pendentes
+## 11. Decisões pendentes
 
 | Assunto | Situação | Quando decidir |
 |---|---|---|
-| Importar o done.txt | Traz histórico antigo para as estatísticas; custo é tratar linhas antigas mal formadas | M8 |
-| Licença | Sem licença (todos os direitos reservados) ou MIT | M1 |
-| Recorrências | Mesmo modelo do Ganbatte (`rep:`); detalhar | Antes da fase em que entrarem |
-| Layout e navegação da TUI | Painéis, atalhos, telas | Início do v0.2 |
-| Regras de tempo do cronômetro | Valor de X horas para aviso e parada | v0.2 |
-| Edição pelo `$EDITOR` | Edição sem texto abre a linha completa da tarefa no editor (como o `git commit`); depende do conversor para texto | Depois do M8 |
-| Edição por campos numerados | Mostra a tarefa com os campos numerados e o usuário escolhe quais editar; é interface interativa | Layout da TUI (v0.2) |
-| Remover tarefa com filhas | Só bloquear (FK) ou oferecer remover junto; mensagem clara | M6 |
+| Licença | Sem licença (todos os direitos reservados) ou MIT | Quando quiser |
+| Nome do pacote `internal/todotxt` | Hoje é o parser da sintaxe do neivi; trocar o nome é opcional | Fatia 1 |
+| Layout e navegação da TUI | Painéis, atalhos, telas | Início da TUI |
+| Edição pelo `$EDITOR` | Edição sem texto abre a linha completa da tarefa no editor (como o `git commit`); depende de converter a tarefa de volta para texto | Depois do v0.1 |
+| Edição por campos numerados | Mostra a tarefa com os campos numerados e o usuário escolhe quais editar; é interface interativa | Layout da TUI |
 
-## 14. Ideias descartadas
+## 12. Ideias descartadas
 
 O que já foi considerado e ficou de fora, com o motivo. Serve para não reabrir a
 mesma discussão.
 
 - **Prioridade como `(A)` no começo da linha:** o título vem primeiro; virou
-  `pri:`. O `(A)` existe só na conversão com o todo.txt.
+  `pri:`. O `(A)` só é lido na importação.
 - **`+fac.BD` para disciplina:** era um projeto fantasiado de disciplina.
   Disciplina virou entidade, marcada com `@`.
 - **Contextos (`@pc`, `@caderno`):** quase toda tarefa tinha o mesmo contexto,
@@ -387,13 +320,16 @@ mesma discussão.
   para disciplina.
 - **Tags livres:** sem uso claro além de disciplina e projeto. Voltam se fizerem
   falta.
-- **todo.txt como fonte da verdade:** não guarda bem filhas, checklist, hábitos
-  e histórico; virou só exportação.
-- **Inbox separada:** obriga a esvaziar; "sem disciplina e sem projeto" é um
-  filtro.
+- **todo.txt como fonte da verdade:** não guarda bem relacionamentos, hábitos e
+  histórico.
+- **Exportação para todo.txt:** servia ao Ganbatte e à automação da manhã, não
+  ao backup; com o corte seco, não tem mais uso (requisitos D-24).
+- **Campo `extras` para as chaves do Ganbatte:** só existia para elas voltarem
+  iguais no export; na importação vão para a descrição (requisitos D-31).
+- **Inbox separada:** obriga a esvaziar; a tarefa incompleta é deduzida.
 - **Interface web:** o terminal é onde eu trabalho; a TUI resolve o visual.
 - **`cobra`:** poucos comandos; o pacote `flag` basta.
 - **XP, cartas e mundo:** utilidade antes de jogo.
-- **Pomodoro:** o cronômetro por tarefa cobre o que importa.
+- **Pomodoro:** o cronômetro por tarefa (futuro) cobre o que importa.
 - **Pensar em outros usuários:** instalador, temporadas e suporte foram o que
   pesou no Ganbatte.

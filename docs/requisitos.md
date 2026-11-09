@@ -1,0 +1,315 @@
+# Requisitos do Neivi
+
+Cobre: v0.1 · Versao do doc: 0.4 · 2026-11-09
+
+| Versao    | data          | Mudanca                   |
+|-----------|---------------|---------------------------|
+| 0.1       | 2026-11-07    | Introducao                |
+| 0.2       | 2026-11-09    | Contexto 2.1 e decisoes (secao 8) |
+| 0.3       | 2026-11-09    | Contexto completo (2.2 e 2.3) |
+| 0.4       | 2026-11-09    | Revisao contra o SPEC: escopo, glossario e decisoes D-22 a D-32; 1 e 2 fechados |
+
+# 1. Introducao
+
+## 1.1 Proposito do documento
+
+Especifica os requisitos do projeto Neivi da v0.1, para guiar a implementação e os testes.
+
+## 1.2 Problema e visao
+
+**Problema**: Eu usava o TODO.txt para me organizar em todas as minhas tarefas e habitos diarios, com o tempo vi a necessidade de criar um sistema maior, desenvolvendo o Ganbatte (por nao ser um projeto pessoal, foi muito utilizada a AI), que acabou sendo usado por mais de uma pessoa e um grupo de amigos onde foi criado um sistema ate de multiplayer envolvendo a plataforma web.
+
+- **P1:** Ao anotar tarefas no TODO.txt faltava a capacidade de diferenciar dados como habitos e tarefas;
+- **P2:** TODO.txt limitava o uso de mais funcionalidades, gerenciamento de habitos, acompanhamento de disciplinas e projetos... Nao era robusto o suficiente;
+- **P3:** Ao desenvolver o Ganbatte para mais pessoas o sistema perdeu a minha identidade e as funcionalidades viraram genericas e muitos desejos pessoais nao podiam entrar no projeto;
+- **P4:** Ganbatte se tornou muito complexo, com codigos onde eu nao poderia contribuir;
+- **P5:** Meu sistema era completamente dependente do uso de AI; como programador e estudante, estava deixando de lado um possivel treinamento e desenvolvimento de software por comodismo;
+- **P6:** Possuia muita gamificacao, perdendo o foco do que realmente importa, o proprio sistema de tarefas, gastando mais tempo desenvolvendo gamificacoes do que de fato usando o sistema;
+
+
+**Para quem**: eu como: pessoa, estudante, programador e maratonista.
+
+**Visao**: com a neivi, eu consigo ter um sistema robusto, com funcionalidades diversas alem de apenas um simples TODO formato txt, mas nao complexo, me permitindo gerir mudancas e entender todos os processos, onde posso registrar, visualizar e analisar minhas tarefas e habitos do meu dia a dia. Pensado para mim e desenvolvido por mim, um hub dedicado para minhas necessidades, para gerenciamento de vida academica + organizacao de projetos pessoais e desenvolvimento das habilidades de programacao competitiva.
+
+## 1.3 Escopo
+
+**Pronto (v0.1)**: uso o neivi todo dia no lugar do TODO.txt para tarefas e habitos, com o resumo diario, e com backup funcionando. (D-22)
+
+**Dentro**:
+- CRUD de tarefas, disciplinas e projetos;                                       (C2, C8)
+- CRUD de habitos com meta e periodicidade (diario, dias especificos, N por semana);  (C5, C11)
+- Registro rapido de tarefas com o minimo de campos, completando depois;                 (C2)
+- Descricao da tarefa (detalhe que fica fora da listagem);                                (C4)
+- Vinculo de tarefas a disciplinas e projetos;                                            (C3, C7)
+- Concluir e reabrir tarefas;                                                             (C4)
+- Registro de habitos realizados (hoje ou ontem), por quantidade, podendo passar da meta;  (C5, C11)
+- Listagem de tarefas, habitos, disciplinas e projetos com filtros e ordenacao;           (C4, C5, C7, C10, C11)
+- Historico de tarefas concluidas e habitos realizados;                                   (C9, C10)
+- Resumo diario (leitura rapida do dia: atrasadas, urgentes e importantes);              (C1)
+- Panorama do projeto, com o link do github (so hyperlink);                              (C9)
+- Importacao unica das tarefas e disciplinas do TODO.txt e do Ganbatte (arquivos locais), antes de desligar o Ganbatte; (D-24)
+- Backup diario automatico (RNF, secao 5).                                               (D-29)
+
+**Fora (v0.1)**:
+- Avaliacoes e notas (vao para o v0.2, antes do semestre 2027-1);                         (C3, C6, D-23)
+- Tarefas filhas e checklist;                                                             (D-25)
+- Sequencia (streak) e dias de folga dos habitos (entram com a TUI);                      (D-26)
+- Exportacao para o TODO.txt;                                                             (D-24)
+- Visao propria do C11 juntando habito e projeto (entra com a TUI);                       (D-30)
+- Interface em TUI;
+- Claude incluido como assistente pessoal;
+- Transcricao de audios de aula e criacao de resumos;
+- Cadastro de resumos de aula;
+- Recomendacao de tarefas de estudo a partir de aulas;
+- Vinculacao ao Google Calendario;
+- Calendario de avaliacoes (visao por data, alertas);
+- Plano de avaliacao da disciplina com pesos, N1/N2 e calculo de media;                   (C6)
+- Painel de planejamento do dia (panorama para reorganizar o dia);                        (C8)
+- Painel de planejamento semanal;                                                         (C10)
+- Inbox (lugar separado para as tarefas incompletas);                                     (C2)
+- Contagem automatica das questoes do Codeforces nos habitos;                            (C11)
+- Ligar um habito a um projeto;
+- Automatizar prioridade com base em prazo e EST;
+- Tarefas recorrentes;
+- Servidor proprio acessado pelos meus computadores (sincronizacao e backup no servidor);
+
+**Fora Sempre**:
+- Sistema de gamificacao avancado e altamente personalizavel
+- Sistema multiplayer e pensado para outras pessoas
+- Sistema em formato html/web
+
+
+## 1.4 Glossário
+
+### Sistema
+
+| Termo    | Definicao |
+|----------|-----------|
+| TODO     | Sistema de gerenciamento de tarefas |
+| Hub      | Centro de conexao de varias frentes, como TODO, maratona, habitos e assistente de AI |
+| Robusto  | Existe mais de um tipo de dado, os dados se relacionam entre si e eh possivel extrair informacoes importantes de um conjunto de dados |
+| Complexo | Alteracoes simples sao dificeis, o sistema eh muito dificil de entender e tem mais funcionalidades do que de fato precisa |
+
+### Entidades
+
+| Termo      | Definicao |
+|------------|-----------|
+| Tarefa     | Atividade que precisa ser feita uma unica vez e, depois de feita, eh concluida |
+| Habito     | Atividade recorrente, feita pelo menos 1 vez por semana; diferente da tarefa, nao eh concluida, e sim marcada com metas em um intervalo de tempo, por isso fica separada das tarefas comuns. Nao atrasa e nao acumula: se nao for feito, so nao bate a meta naquele periodo (diferente de uma tarefa recorrente, que continua devendo) |
+| Disciplina | Materia academica da faculdade, a qual se vinculam tarefas, avaliacoes e notas |
+| Projeto    | Projeto individual focado em programacao, podendo ser pessoal ou academico, ao qual se vinculam tarefas, podendo ser continuo ou possuir um fim determinado/indeterminado. Pode ter uma disciplina (opcional); com disciplina eh academico, sem disciplina eh pessoal. Situacao: ativo, pausado, concluido ou cancelado |
+| Avaliacao  | (v0.2) Atividade avaliativa de uma disciplina (prova, trabalho, lista...), com data e conteudos (texto livre), que recebe uma nota |
+| Nota       | (v0.2) Valor obtido em uma avaliacao |
+| Resumo     | Resumo ou anotacao referente a uma aula (futuro, fora do v0.1) |
+
+### Atributos do habito
+
+| Termo          | Definicao |
+|----------------|-----------|
+| Meta           | Objetivo de curto prazo responsavel por metrificar um habito, podendo ser diaria, em dias especificos ou uma quantidade determinada durante a semana |
+| Periodicidade  | Quando a meta do habito vale: diario, dias especificos (ex.: seg/qua/sex) ou N vezes por semana (dias livres) |
+
+### Atributos e estados da tarefa
+
+| Termo             | Definicao |
+|-------------------|-----------|
+| Prazo             | Data limite para realizar uma tarefa |
+| EST               | Estimativa de tempo para realizar uma tarefa |
+| Descricao         | Detalhe da tarefa, visto so nos detalhes, fora da listagem |
+| Prioridade        | Nivel de importancia de uma tarefa (A a D), usado para decidir o que fazer primeiro; D eh uma prioridade definida (baixa), diferente de vazio (ainda nao decidida) |
+| Atrasada          | Tarefa nao concluida cuja a data ja passou, sem considerar o dia atual |
+| Urgente           | Tarefa nao concluida com prazo no dia atual, de qualquer prioridade (D-27) |
+| Importante        | Tarefa nao concluida de prioridade A e sem prazo (D-27) |
+| Tarefa incompleta | Tarefa sem prioridade definida, registrada de forma rapida para completar na revisao do dia |
+| Tarefa pronta     | Tarefa com prioridade definida (A a D) |
+| Tarefa nova       | Tarefa criada hoje ou ontem (deduzido pela data de criacao, sem marcacao) |
+
+### Tempo
+
+| Termo  | Definicao |
+|--------|-----------|
+| Dia    | Periodo de 24 horas, das 00:00 as 23:59 |
+| Semana | Periodo de domingo a sabado |
+| Mes    | Do dia 01 ao ultimo dia do respectivo mes, conforme o calendario |
+
+### Visoes
+
+| Termo                          | Definicao |
+|--------------------------------|-----------|
+| Resumo diario                  | Visao rapida, so de leitura, do que tem para hoje: tarefas atrasadas, urgentes e importantes, nessa ordem (C1) |
+| Painel de planejamento do dia  | Panorama do dia para reorganizar: tarefas novas e antigas de todas as disciplinas, ajustando prioridades (C8) |
+| Painel de planejamento semanal | Panorama da semana: o que foi feito e o que esta por vir na semana/mes (C10) |
+| Inbox                          | Local onde ficam as tarefas incompletas, que ainda nao foram transformadas em tarefas prontas para serem realizadas. Nao usado no neivi: a tarefa incompleta eh deduzida (D-10) |
+
+# 2. Contexto
+## 2.1 Usuário e contextos de uso
+
+Um estudante de ciencia da computacao, que faz maratona de programacao juntamente com projetos da faculdade e pessoais, utiliza no dia a dia seu notebook com Arch Linux em todo lugar que vai sempre ao lado do terminal e neovim. Seu objetivo eh organizar o dia a dia.
+
+- **C1 - Inicio do dia:** ao ligar o PC, de forma rapida (~1 min). Leio as tarefas atrasadas e as urgentes para ja me preparar para o dia.
+  -> Exige ver atrasadas e urgentes juntas, de uma vez, sem montar filtro.
+- **C2 - Registro de tarefas:** apos lembrar/receber uma nova tarefa, de forma instantanea. Se a tarefa nao apresentar uma urgencia grande, eh registrada de forma simples (deixando campos pendentes para a proxima revisao do dia); do contrario, de forma completa (com todos os campos).
+  -> Exige um preenchimento que difere o simples do completo: registrar com o minimo de campos e reencontrar depois as tarefas incompletas, na revisao do dia.
+- **C3 - Professor marcou a prova:** durante a aula, com pressa. Registro a data e os conteudos da prova.
+  -> Exige registrar em poucos segundos, ligado a disciplina.
+  -> Atendido no v0.2 (D-23).
+- **C4 - Consultas e conclusoes:** apos terminar uma tarefa (~2 min). Marco a tarefa concluida como feita e verifico quais tarefas ainda faltam ser feitas no dia; com a EST e a prioridade, defino qual a proxima tarefa que vou fazer.
+  -> Exige visualizacao facil das tarefas e de seus principais atributos: EST, prioridade, atrasadas.
+- **C5 - Acompanhamento de habitos:** ao longo do dia, com pressa. Vejo quais habitos ainda faltam ser feitos e registro algum ja realizado.
+  -> Exige visualizar rapidamente os habitos pendentes e marcar os ja feitos de forma simples.
+- **C6 - Registro de notas:** apos receber a nota de uma avaliacao, com pressa (~5 min). Registro a nota na respectiva avaliacao.
+  -> Exige o registro facil das notas.
+  -> Atendido no v0.2 (D-23).
+- **C7 - Organizar aulas:** apos a ultima aula do dia, com calma (~5 min). Revejo as tarefas novas associadas as ultimas aulas, para definir novas prioridades.
+  -> Exige a visualizacao das tarefas novas relacionadas as ultimas aulas.
+- **C8 - Revisao do dia:** no primeiro bloco livre do dia, com calma (~15 min). Comparo as novas prioridades com as antigas e faco os ultimos ajustes que preciso para comecar o dia.
+  -> Exige uma visualizacao das tarefas novas do dia junto com as antigas e uma edicao rapida das prioridades.
+- **C9 - Acompanhamento de Projetos:** durante um bloco ou tarefa que envolva um projeto, com calma (~15 min). Me contextualizo sobre o projeto, revisando do que se trata, juntamente com a ultima tarefa feita associada e uma visualizacao das pendentes.
+  -> Exige um panorama de todo o projeto, com suas informacoes e caracteristicas (hyperlink para o github se houver), e vislumbre das suas tarefas ja feitas e as pendentes.
+- **C10 - Revisao semanal:** no domingo em casa, com calma (~30 min). Analiso as tarefas atrasadas e pendentes junto com as proximas avaliacoes para redefinir prioridades.
+  -> Exige um panorama de tudo que foi feito na semana, com tudo que esta por vir na semana/mes.
+  -> As proximas avaliacoes entram no v0.2 (D-23).
+- **C11 - Foco na Maratona:** no bloco de maratona, com rapidez (~2 min). Verifico quantas questoes do Codeforces foram realizadas e qual o conteudo que irei focar hoje.
+  -> Exige consultar rapidamente o habito de questoes do Codeforces juntamente com o proximo conteudo de estudo.
+
+## 2.2 Restrições
+
+- **R-01 Linguagem:** Go.
+  Porque: para eu ter que aprender uma linguagem nova, sem cair na tentacao de copiar codigos ja escritos antes.
+- **R-02 Banco de Dados:** SQLite.
+  Porque: para eu aplicar os conhecimentos adquiridos na disciplina *Projeto de Banco de Dados*.
+- **R-03 Maquina e Dados:** Maquinas proprias.
+  Porque: ao nao utilizar nenhum tipo de terceiro nao ha problemas de privacidade, e permite a expansao futura para um servidor proprio (futuro, fora do escopo).
+- **R-04 Interface:** Terminal: CLI no v0.1, TUI no futuro.
+  Porque: para nao ter que aprender mais uma linguagem nova para interface web/software, alem do terminal fazer parte do cotidiano.
+- **R-05 Uso:** Unicamente pessoal, um usuario so.
+  Porque: fazer um sistema com as minhas demandas apenas (P3).
+- **R-06 Desenvolvimento:** Codigo escrito por mim, com a IA apenas como mentora.
+  Porque: permite eu me autoaperfeicoar e nao depender de IA (P4, P5).
+- **R-07 Internet:** Nenhuma funcionalidade do v0.1 precisa de internet.
+  Porque: o neivi funciona em qualquer lugar, inclusive em aula sem rede (S-01).
+
+
+## 2.3 Suposições e dependências
+
+### Suposicoes
+
+- **S-01:** O notebook esta comigo em todos os momentos de uso.
+  Se mudar: C2, C3 e C5 ficam sem registro na hora; anoto em outro lugar e passo depois.
+- **S-02:** O relogio local do computador registra a data e hora atual corretamente.
+  Se mudar: dia, tarefa nova, atrasada, urgente e habitos ficam errados.
+- **S-03:** Uso de notebook em aula eh sempre permitido.
+  Se mudar: o C3 fica sem registro na hora; anoto em outro lugar e passo depois.
+- **S-04:** Uso o neivi quase todos os dias.
+  Se mudar: tarefas deixam de ser novas (D-11) sem eu ter revisado. Risco aceito: o sistema mantem tudo o que ja foi feito e segue como se nada tivesse acontecido.
+- **S-05:** Os dados ficam em um computador so.
+  Se mudar: preciso de um servidor ou sincronizacao (Fora v0.1).
+- **S-06:** A avaliacao eh registrada antes da nota chegar.
+  Se mudar: ja coberto pela D-14 (a avaliacao eh criada na hora, com a nota).
+- **S-07:** Sempre sei a disciplina de uma tarefa academica no momento do registro.
+  Se mudar: a tarefa sem disciplina nao aparece como vinda das aulas no C7 (D-20).
+- **S-08:** Uso o neivi sempre no mesmo fuso horario.
+  Se mudar: dia, tarefa nova, atrasada, urgente e habitos ficam errados. Ajuste futuro.
+- **S-09:** Copio o backup para um HD externo de tempo em tempo.
+  Se mudar: se o computador der pau, perco os dados desde a ultima copia.
+
+### Dependencias
+
+- **DEP-01:** A importacao depende do formato atual dos arquivos do Ganbatte e do TODO.txt (todo.txt, done.txt, disciplinas.txt, hunter/avaliacoes.txt e arquivos .json do hunter).
+  Se mudar: a importacao precisa ser refeita. A importacao eh feita uma vez so, antes de desligar o Ganbatte; depois dela essa dependencia acaba (D-24, Q-17).
+- **DEP-02:** Para rodar, o neivi precisa apenas do binario e do arquivo do banco (SQLite em Go puro, sem SQLite instalado nem bibliotecas em C). Para compilar, precisa do Go e dos modulos do go.mod.
+  Se mudar: o binario se recompila; o arquivo do banco eh a unica coisa insubstituivel.
+- **DEP-03:** HD externo para guardar as copias do backup.
+  Se mudar: ver S-09.
+
+
+# 8. Decisoes e questoes em aberto
+
+### Questoes
+
+- **Q-01** Urgente: o que torna uma tarefa urgente? -> resolvida em D-09 (glossario)
+- **Q-02** Atrasada: prazo hoje ja conta? -> resolvida no glossario (nao conta)
+- **Q-03** Tarefa pronta: quais campos? -> resolvida em D-10
+- **Q-04** Tarefa nova: desde quando? -> resolvida em D-11
+- **Q-05** Periodicidade dos habitos no v0.1 -> resolvida em D-08
+- **Q-06** Habito: passar da meta conta? -> resolvida em D-12
+- **Q-07** Desempate por EST -> resolvida em D-04
+- **Q-08** Projeto: situacao e tipo -> resolvida em D-06
+- **Q-09** Conteudo de avaliacao nao definido pelo professor -> resolvida em D-13
+- **Q-10** Ordem do C7 e C8 -> confirmada: C7 (organizar aulas) antes do C8 (revisao do dia)
+- **Q-11** Nota sem avaliacao registrada -> resolvida em D-14
+- **Q-12** Habito x tarefa recorrente -> resolvida no glossario (Habito)
+- **Q-13** Tarefa recorrente no v0.1? -> resolvida em D-16
+- **Q-14** Criterios de cada nivel de prioridade (A a D), para nem tudo ficar no A nem tudo vazio. *(em aberto)*
+- **Q-15** Adicionar ou concluir tarefa em disciplina ou projeto inativo: o sistema bloqueia, avisa, ou eu so suponho que nao vou fazer? (ex-S-08) *(em aberto)*
+- **Q-16** Disciplina precisa de situacao ou semestre, para saber quais sao as atuais? Hoje so o projeto tem situacao. (ex-S-08) *(em aberto)*
+- **Q-17** Quais arquivos do Ganbatte importar: todo.txt, done.txt, disciplinas.txt, hunter/avaliacoes.txt, os .json do hunter? (DEP-01) -> parcial: no v0.1 so tarefas e disciplinas; o hunter fica para o v0.2 (D-23); o done.txt eh a Q-18
+- **Q-18** Importar o done.txt (historico antigo de tarefas concluidas)? *(em aberto, fatia de importacao)*
+- **Q-19** Para onde vai a copia do backup: repositorio privado, HD externo (S-09) ou os dois? *(em aberto, fatia de backup)*
+
+### Decisoes
+
+- **D-01** Maratona nao tem estrutura propria: eh um projeto continuo (tarefas = conteudos de estudo) + um habito de questoes no Codeforces.
+  Porque: evita criar estrutura para um caso so; mantem o sistema nao complexo (glossario: Complexo; P6).
+- **D-02** Todo habito tem uma meta numerica; feito/nao feito eh o caso de meta 1.
+  Porque: uma regra so para os dois tipos de habito.
+- **D-03** Questoes do Codeforces sao registradas manualmente no v0.1; contagem automatica (API do Codeforces) fica para o futuro.
+  Porque: simples, sem dependencia externa; o cenario C11 funciona igual.
+- **D-04** Duas ordenacoes. Resumo diario (C1): prazo -> prioridade -> EST. Padrao e planejamento (C8): prioridade -> prazo -> EST. No EST, as mais rapidas primeiro. Projetos nao tem ordem sequencial propria.
+  Porque: o resumo eh sobre urgencia, o planejamento eh sobre importancia; a prioridade ja define o proximo conteudo de um projeto.
+- **D-05** Habitos nao se ligam a projetos. O C11 eh atendido por uma visao propria que junta o habito e as tarefas do projeto.
+  Porque: a maratona eh o unico caso; um caso unico nao justifica mudar a estrutura.
+- **D-06** Projeto guarda: nome, descricao, link do github, data de criacao (registrada pelo sistema), situacao (ativo, pausado, concluido, cancelado), disciplina (opcional) e caminho da pasta local (opcional, ex.: ~/Code/...). O tipo pessoal/academico eh deduzido: com disciplina eh academico. Disciplina nao aponta para projeto.
+  Porque: minimo para o C9; tipo deduzido evita um campo a mais; o caminho local me leva direto para a pasta do projeto.
+- **D-07** Link do github no projeto sobe para o v0.1 (so hyperlink).
+  Porque: o C9 precisa dele e o custo eh baixo.
+- **D-08** Periodicidade dos habitos: diario, N vezes por semana (dias livres) e dias especificos (seg/qua/sex). Os tres entram direto no v0.1.
+  Porque: quero os habitos por tipo e meta desde o inicio.
+- **D-09** Urgente = tarefa de maior prioridade com prazo no dia atual. *(revista na D-27)*
+  Porque: o resumo diario (C1) mostra so o que nao pode esperar.
+- **D-10** Tarefa pronta = prioridade definida (A a D). Prioridade vazia = tarefa incompleta.
+  Porque: separa "ainda nao decidi" de "decidi que eh baixa"; disciplina e projeto nao servem, pois tarefas pessoais nao tem nenhum dos dois.
+- **D-11** Tarefa nova = criada hoje ou ontem, deduzido pela data de criacao, sem marcacao.
+  Porque: atende o C7 e o C8 e deixa de ser nova sozinha, sem passo a mais.
+- **D-12** Habito pode ser registrado alem da meta; o valor real fica no historico. Ao bater a meta, o habito sai da visao do dia; registros extras sao feitos por outro caminho.
+  Porque: quero saber quanto fiz de verdade, sem poluir a visao do dia.
+- **D-13** Conteudo de avaliacao nao definido vira uma tarefa ("perguntar o conteudo da avaliacao de X").
+  Porque: eh raro e uma tarefa ja resolve, sem funcionalidade nova.
+- **D-14** No v0.1, notas guardam so o valor obtido em cada avaliacao (sem pesos e media); o plano de avaliacao (pesos, N1/N2, media) fica para o futuro. Se a nota chegar e a avaliacao nao existir, a avaliacao eh criada na hora, ja com a nota.
+  Porque: o esquema de pesos da PUC varia por professor e muda no semestre; merece uma fatia propria. Registrar a nota ja atende o C6.
+- **D-15** O filtro por disciplina inclui as tarefas dos projetos ligados a ela.
+  Porque: as tarefas de um projeto de uma disciplina sao dela; evita repetir a disciplina em cada tarefa.
+- **D-16** Sem tarefas recorrentes no v0.1.
+  Porque: nao preciso agora.
+- **D-17** Principio: deduzir em vez de guardar (tarefa nova, tarefa incompleta, tipo do projeto).
+  Porque: menos passos manuais e menos estado para manter; segue o "nao complexo".
+- **D-18** Dia = das 00:00 as 23:59 (glossario). (ex-S-04)
+  Porque: *(preencher)*
+- **D-19** Semana = de domingo a sabado (glossario). (ex-S-05)
+  Porque: *(preencher)*
+- **D-20** Tarefa vinda das aulas = tarefa nova (D-11) com disciplina. (ex-S-07)
+  Porque: deduzido, sem marcacao a mais (D-17); atende o C7.
+- **D-21** Habitos podem ser registrados em hoje ou em ontem.
+  Porque: as vezes esqueco de marcar ou nao tenho acesso ao computador quando faco.
+- **D-22** Pronto do v0.1: uso o neivi todo dia no lugar do TODO.txt para tarefas e habitos, com o resumo diario, e com backup funcionando.
+  Porque: sem uma frase de pronto, toda funcionalidade boa entra no v0.1 e ele nunca termina.
+- **D-23** Avaliacoes e notas saem do v0.1 e vao para o v0.2, prontas antes do semestre 2027-1. A D-14 continua valendo.
+  Porque: o semestre 2026-2 acaba em dezembro; quando o v0.1 ficar pronto quase nao vai ter prova para registrar. Eh a maior entidade nova do escopo.
+- **D-24** Sem exportacao para o TODO.txt. O Ganbatte tem corte seco: importo uma vez quando o v0.1 estiver pronto e desligo. A automacao das 5:50 continua so como gatilho do dia ate a TUI.
+  Porque: o export servia ao Ganbatte e a automacao, nao ao backup; o backup eh o dump do proprio banco. Estou no fim do semestre e nao vou usar as sugestoes de aula do Ganbatte.
+- **D-25** Tarefas filhas e checklist fora do v0.1, e fora do banco.
+  Porque: nenhum cenario (C1 a C11) pede; se fizerem falta no uso, voltam com uma migracao.
+- **D-26** Sem sequencia (streak) e sem dias de folga no v0.1. A folga, quando vier, eh uma regra de calculo sobre os registros: os dias que faltaram sao perdoados na conta, sem mudar os dados, inclusive no passado.
+  Porque: a sequencia so faz sentido com a visualizacao da TUI; guardando os registros de cada dia, ela sai deles depois (D-17).
+- **D-27** Resumo diario em tres blocos, nesta ordem: atrasadas, urgentes (prazo hoje, qualquer prioridade) e importantes (prioridade A sem prazo). Tarefa A com prazo futuro so aparece no dia dela ou quando atrasar. Substitui a D-09.
+  Porque: uma tarefa B com prazo hoje tambem nao pode esperar; e o resumo continua curto, de ~1 min (C1). O resumo eh o C1 (primeira vez do dia), diferente da revisao do C8 (primeiro bloco livre).
+- **D-28** Ordenacao: a da D-04, com o id como ultimo desempate.
+  Porque: a ordem nunca muda entre duas listagens iguais.
+- **D-29** Backup diario automatico entra no v0.1, como RNF (secao 5). A S-09 complementa, nao substitui.
+  Porque: o banco eh a unica coisa insubstituivel (DEP-02).
+- **D-30** C9 atendido por um comando de panorama do projeto; C11 atendido pela listagem do projeto da maratona junto com a lista de habitos, sem visao propria no v0.1.
+  Porque: na CLI dois comandos ja resolvem; a visao que junta tudo fica para a TUI.
+- **D-31** Sem campo para as chaves do Ganbatte (`aula:`, `av:`, `top:`, `gh:`...). Na importacao elas vao para a descricao da tarefa ("Ganbatte: aula:2026-09-30 av:A12"). Fora da importacao, palavra com `:` desconhecida faz parte do titulo.
+  Porque: o campo so existia para elas voltarem iguais no export (D-24); na descricao a informacao fica a vista sem mudar o banco, e o TODO.txt original continua no historico do git.
+- **D-32** O requisitos.md diz o que o neivi faz (escopo, cenarios, regras, stories); o SPEC.md diz como (sintaxe, arquitetura, modelo de dados, comandos).
+  Porque: os dois falando de escopo iam se contradizer.
