@@ -80,8 +80,6 @@ func runAdd(db *sql.DB, args []string) {
 		EstimateMin: entry.EstimateMin,
 		SubjectID:   idSubject,
 		ProjectID:   idProject,
-		//parenteID
-		Extras: entry.Extras,
 	}
 
 	id, err := store.AddTask(db, t)
