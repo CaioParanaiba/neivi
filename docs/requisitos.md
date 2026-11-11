@@ -240,6 +240,12 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
 | US-08 | Ver as tarefas incompletas | Must | 4 | C8 | testada |
 | US-09 | Ver o panorama das tarefas, com foco quando quiser | Must | 4 | C8, C7, C9, C4 | testada |
 | US-10 | Consultar uma tarefa | Must | 4 | C4, C9 | testada |
+| US-11 | Cadastrar um projeto | Must | 2 | C9 | testada |
+| US-12 | Ver os projetos | Must | 2 | C9 | testada |
+| US-13 | Retomar um projeto (panorama) | Must | 2 | C9 | testada |
+| US-14 | Mudar um projeto | Must | 2 | C9 | testada |
+| US-15 | Cadastrar, ver e encerrar disciplinas | Must | 2 | C3, C7 | testada |
+| US-16 | Remover uma disciplina ou um projeto criado por engano | Should | 2 | — | testada |
 
 Prioridade: Must (sem ela o v0.1 nao fica pronto, D-22), Should (importante, mas da para viver sem), Could (se sobrar tempo).
 Status: - (nao escrita), rascunho, pronta, testada.
@@ -310,7 +316,7 @@ Prioridade: Must · Fatia: 1 · Cenarios: C2 · Regras: RN-01, RN-02, RN-03, RN-
 
 ### US-02 · Registro completo de tarefa
 
-Prioridade: Must · Fatia: 1 · Cenarios: C2, C1 · Regras: RN-03, RN-05, RN-06, RN-07, RN-08, RN-09
+Prioridade: Must · Fatia: 1 · Cenarios: C2, C1 · Regras: RN-03, RN-05, RN-06, RN-07, RN-08, RN-09, RN-19
 
 **Como** eu, organizando o dia com tempo livre, ou no meio de outra tarefa quando surge uma tarefa urgente,
 **quero** registrar a tarefa numa linha so, ja com os campos que eu sei (prioridade, prazo, disciplina ou projeto; EST e descricao quando der),
@@ -338,6 +344,8 @@ Prioridade: Must · Fatia: 1 · Cenarios: C2, C1 · Regras: RN-03, RN-05, RN-06,
   | `neivi add lista due:29/02`  | `erro: 29/02 nao existe em 2027` |
   | `neivi add lista est:abc`    | `erro: estimativa abc invalida (use 30m, 1h, 1h15 ou 90)` |
   | `neivi add lista pri:A pri:B`| `erro: mais de uma prioridade (pri:A e pri:B)` |
+- **CA-02.7** *(estado)* `neivi add corrigir bug +ganbatte` (ganbatte pausado) cria a tarefa e mostra
+  `aviso: o projeto ganbatte esta pausado (reativar: neivi project edit ganbatte sit:ativo)`; o mesmo para disciplina encerrada (RN-19).
 
 **Notas:** estado incompativel (tarefa duplicada) ja coberto pela RN-01 e pelo CA-01.4. Diferencas com o codigo hoje: a confirmacao (hoje so `Tarefa: 1 adicionada`) e as mensagens de erro.
 
@@ -384,6 +392,7 @@ Prioridade: Must · Fatia: 1 · Cenarios: C8, C2 · Regras: RN-01, RN-02, RN-03,
 - **CA-03.7** *(estado incompativel)* Dado a tarefa 1 `comprar cabo HDMI` nao concluida,
   quando registro `neivi edit 4 comprar cabo hdmi`,
   entao o titulo muda e aparece `aviso: ja existe a tarefa 1 com esse titulo` (RN-01).
+- **CA-03.8** *(estado)* Trocar o `@`/`+` de uma tarefa para algo inativo muda e avisa do mesmo jeito (RN-19). No `done` nao ha aviso.
 
 **Notas:** editar varias tarefas de uma vez fica para depois (rascunho). O titulo nunca fica vazio (RN-03): nao existe jeito de apaga-lo, so de troca-lo. Diferencas com o codigo hoje: a confirmacao (hoje `tarefa 4 editada`), as mensagens de `edit` sem texto/sem id/id invalido (hoje mostra a ajuda), o aviso de concluida e o aviso de duplicada.
 
@@ -679,6 +688,146 @@ Prioridade: Must · Fatia: 4 · Cenarios: C4, C9 · Regras: RN-02, RN-14
 
 ---
 
+## Fatia 2 · Disciplinas e projetos
+
+---
+
+### US-11 · Cadastrar um projeto
+
+Prioridade: Must · Fatia: 2 · Cenarios: C9 · Regras: RN-06, RN-19, RN-21
+
+**Como** eu, quando comeco um projeto novo (pessoal, da faculdade ou continuo, como a maratona),
+**quero** cadastrar o projeto numa linha so, com nome, disciplina, GitHub, pasta, descricao e se ele eh continuo,
+**para** ter tudo o que preciso para retomar o projeto num lugar so (C9).
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026; @BD cadastrada)
+- **CA-11.1** *(caminho feliz)* `neivi project add neivi Meu sucessor do Ganbatte gh:CaioParanaiba/neivi dir:~/Code/neivi -- em Go, CLI e depois TUI`
+  cria o projeto ativo, pessoal, nao continuo, e aparece `+ 3 · neivi · Meu sucessor do Ganbatte · ativo`.
+- **CA-11.2** *(caminho feliz, minimo)* `neivi project add maratona` cria com o nome igual ao codigo: `+ 4 · maratona · ativo` (nome igual ao codigo nao se repete).
+- **CA-11.3** *(caminho feliz, academico e continuo)* `neivi project add feedback360 Trabalho de BD @BD` cria o projeto academico (RN-21); `cont:sim` o torna continuo.
+- **CA-11.4** *(limite, GitHub)* `gh:CaioParanaiba/neivi` vira `https://github.com/CaioParanaiba/neivi`; uma URL completa fica como esta.
+- **CA-11.5** *(entrada invalida)* Nada eh criado:
+
+  | Entrada                                   | Mensagem |
+  |-------------------------------------------|----------|
+  | `neivi project add`                       | `erro: falta o codigo do projeto (exemplo: neivi project add neivi)` |
+  | `neivi project add neivi` (ja existe)     | `erro: ja existe um projeto neivi (para mudar: neivi project edit neivi)` |
+  | `neivi project add x @XX`                 | `erro: disciplina XX nao cadastrada (cadastrar: neivi subject add XX)` |
+  | `neivi project add x gh:neivi`            | `erro: github neivi invalido (use usuario/repo ou a URL)` |
+  | `neivi project add x sit:parado`          | `erro: situacao parado invalida (use ativo, pausado, concluido ou cancelado)` |
+  | `neivi project add x cont:talvez`         | `erro: cont:talvez invalido (use cont:sim ou cont:nao)` |
+
+- **CA-11.6** *(estado)* `neivi project add x @ED` com ED encerrada cria e mostra `aviso: a disciplina ED esta encerrada (reativar: neivi subject edit ED sit:ativa)` (RN-19).
+- **CA-11.7** *(estado)* `dir:` com uma pasta que nao existe cria e avisa `aviso: a pasta ~/Code/x nao existe`.
+
+---
+
+### US-12 · Ver os projetos
+
+Prioridade: Must · Fatia: 2 · Cenarios: C9 · Regras: RN-20, RN-21
+
+**Como** eu, com um tempo livre, querendo decidir em qual projeto trabalhar hoje,
+**quero** ver os projetos com a situacao, o progresso, o que falta e a ultima atividade,
+**para** saber qual esta acabando, qual esta parado e qual ja posso marcar como concluido.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026)
+- **CA-12.1** *(caminho feliz)* `neivi project ls` mostra so os ativos e pausados, os ativos primeiro e, dentro de cada grupo, a ultima atividade mais recente primeiro; sem atividade no fim:
+
+      ID  PROJETO      SITUACAO  DISC  PROGRESSO  PENDENTES  ULTIMA
+      3   neivi        ativo     -     71%        5          ter 10/11 (ha 1 dia)
+      1   maratona     ativo     -     continuo   12         seg 02/11 (ha 9 dias)
+      5   feedback360  ativo     BD    0%         6          -
+      2   ganbatte     pausado   -     88%        2          sex 16/10 (ha 26 dias)
+
+- **CA-12.2** *(limite, progresso)* (RN-20) feitas / (feitas + pendentes); projeto continuo mostra `continuo`; sem nenhuma tarefa mostra `-`; 100% nao conclui o projeto.
+- **CA-12.3** *(caminho feliz, todos)* `neivi project ls all` mostra tambem os concluidos e cancelados, depois dos pausados.
+- **CA-12.4** *(estado)* Sem projetos: `nenhum projeto (cadastrar: neivi project add codigo)`.
+
+---
+
+### US-13 · Retomar um projeto (panorama)
+
+Prioridade: Must · Fatia: 2 · Cenarios: C9 · Regras: RN-14, RN-17, RN-20, RN-21
+
+**Como** eu, no comeco de cada bloco dedicado a um projeto,
+**quero** ver do que ele se trata, a ultima coisa que fiz, o progresso, o GitHub, a pasta e as proximas tarefas,
+**para** me contextualizar rapido e decidir o que priorizar nele.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026)
+- **CA-13.1** *(caminho feliz)* `neivi project show neivi` mostra:
+
+      projeto 3 · neivi · Meu sucessor do Ganbatte
+        situacao:    ativo
+        disciplina:  -  (pessoal)
+        github:      https://github.com/CaioParanaiba/neivi
+        pasta:       ~/Code/neivi
+        criado:      sab 31/10
+        progresso:   71% · 5 pendentes
+        ultima:      ter 10/11 · 23 · refatorar o parser  (ha 1 dia)
+
+        em Go, CLI e depois TUI
+
+      pendentes (5)
+      ID  P  PRAZO      EST  TAREFA
+      ... (tabela das pendentes do projeto, na ordem padrao)
+
+- **CA-13.2** *(limite)* Academico: `disciplina:  BD (academico)`; continuo: `progresso:   continuo · 12 pendentes`; sem tarefas: `progresso:   -  (sem tarefas)`, `ultima:      -` e `nenhuma tarefa pendente`; campos vazios como `-`; sem descricao, sem o paragrafo.
+- **CA-13.3** *(entrada invalida)* `neivi project show xx`: `erro: projeto xx nao cadastrado (cadastrar: neivi project add xx)`; `neivi project show`: `erro: falta o codigo do projeto (exemplo: neivi project show neivi)`.
+
+---
+
+### US-14 · Mudar um projeto
+
+Prioridade: Must · Fatia: 2 · Cenarios: C9 · Regras: RN-10, RN-19, RN-21
+
+**Como** eu, quando um projeto muda de situacao (pausei, terminei, desisti) ou cadastrei algo errado,
+**quero** mudar so os campos que preciso, com a mesma sintaxe do cadastro,
+**para** manter os projetos certos sem apagar e recriar (e sem perder as tarefas ligadas).
+
+**Criterios de aceitacao**
+- **CA-14.1** *(caminho feliz)* `neivi project edit ganbatte sit:pausado` muda so a situacao e aparece `~ 2 · ganbatte · pausado`.
+- **CA-14.2** *(caminho feliz)* Texto solto troca o nome; `-` apaga (`dir:-`, `gh:-`, `@-`, `-- -`); `code:novo` troca o codigo (as tarefas continuam ligadas, porque a ligacao eh pelo id).
+- **CA-14.3** *(entrada invalida)* Mesmas mensagens do cadastro; `neivi project edit neivi` sem nada: `erro: nada para mudar no projeto neivi (exemplo: neivi project edit neivi sit:pausado)`; `code:` para um codigo que ja existe: `erro: ja existe um projeto <codigo>`.
+- **CA-14.4** *(estado)* `@ED` com ED encerrada muda e avisa (RN-19).
+
+---
+
+### US-15 · Cadastrar, ver e encerrar disciplinas
+
+Prioridade: Must · Fatia: 2 · Cenarios: C3, C7 · Regras: RN-19, RN-21
+
+**Como** eu, no comeco e no fim de cada semestre,
+**quero** cadastrar as disciplinas do semestre, ver as ativas e encerrar as que acabaram,
+**para** a lista mostrar so o semestre atual sem perder o historico das antigas.
+
+**Criterios de aceitacao**
+- **CA-15.1** *(caminho feliz)* `neivi subject add BD Projeto de Banco de Dados` cria ativa e aparece `+ 1 · BD · Projeto de Banco de Dados · ativa`.
+- **CA-15.2** *(caminho feliz)* `neivi subject ls` mostra so as ativas; `neivi subject ls all` inclui as encerradas, depois:
+
+      ID  DISC  NOME                       PENDENTES
+      1   BD    Projeto de Banco de Dados  6
+      2   ED    ED                         3
+
+- **CA-15.3** *(caminho feliz)* `neivi subject edit BD sit:encerrada` aparece `~ 1 · BD · Projeto de Banco de Dados · encerrada`; texto solto troca o nome; `code:` troca o codigo.
+- **CA-15.4** *(entrada invalida)* `subject add` sem codigo, codigo repetido, `sit:` invalido e `subject edit` sem nada: mesmas mensagens do projeto (`... (use ativa ou encerrada)`).
+
+---
+
+### US-16 · Remover uma disciplina ou um projeto criado por engano
+
+Prioridade: Should · Fatia: 2 · Cenarios: — · Regras: RN-22
+
+**Como** eu, quando criei uma disciplina ou um projeto duplicado por engano,
+**quero** apagar so o que nao tem tarefas,
+**para** nao deixar cadastro errado no historico, sem risco de perder o que eh real.
+
+**Criterios de aceitacao**
+- **CA-16.1** *(caminho feliz)* `neivi subject rm BD2` (sem tarefas) pergunta `remover a disciplina BD2 (sem tarefas)? [s/N]`; com `s`, `✗ BD2 removida`; com outra resposta, `BD2 mantida`. Igual para `project rm`.
+- **CA-16.2** *(estado)* `neivi subject rm BD` (com 23 tarefas) recusa: `erro: a disciplina BD tem 23 tarefas (mude as tarefas para outra com neivi edit, ou tire da lista: neivi subject edit BD sit:encerrada)`. Igual para projeto (`sit:cancelado`).
+- **CA-16.3** *(estado)* Disciplina com projeto ligado tambem recusa: `erro: a disciplina BD tem 1 projeto (feedback360)`.
+
+---
+
 # 4. Regras de negocio
 
 Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte) e onde eh usada.
@@ -730,6 +879,15 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 - **RN-18** Filtros da listagem: `@codigo`, `+codigo`, `pri:X` escolhem; `@` e `+` sozinhos = qualquer disciplina / qualquer projeto; `@-`, `+-`, `pri:-` = sem. Disciplina usa a disciplina efetiva (RN-14). `new` = criadas hoje ou ontem (D-11); `late` = atrasadas. Filtros do mesmo tipo sao "ou"; de tipos diferentes, "e". Outras palavras buscam no titulo: todas precisam aparecer, ignorando maiusculas e acentos. Palavras reservadas (`all`, `done`, `late`, `new`, `due`, `desc`) nao entram na busca.
   Fonte: decisoes de 04/11 (SPEC 5), D-11, US-09 · Usada em: US-08, US-09
 
+- **RN-19** Ligar uma tarefa (add, edit) ou um projeto a uma disciplina encerrada, ou uma tarefa a um projeto que nao esta ativo, eh permitido, com aviso e o comando para reativar. Concluir nao avisa.
+  Fonte: Q-15 · Usada em: US-02, US-03, US-11, US-14
+- **RN-20** Progresso do projeto: feitas / (feitas + pendentes), em %; removidas nao contam. Projeto continuo nao tem %; projeto sem tarefas mostra `-`. 100% nao conclui o projeto: concluir eh mudar a situacao.
+  Fonte: US-12, US-13 · Usada em: US-12, US-13
+- **RN-21** Situacao: projeto eh ativo (padrao), pausado, concluido ou cancelado; disciplina eh ativa (padrao) ou encerrada. Projeto nao eh continuo por padrao. Tipo academico ou pessoal eh deduzido da disciplina (D-06). As listas mostram so ativos e pausados (projetos) ou ativas (disciplinas); `all` mostra tudo.
+  Fonte: D-06, D-36, Q-16, US-12, US-15 · Usada em: US-11 a US-15
+- **RN-22** So da para remover disciplina ou projeto sem nada ligado (tarefas, e para disciplina, projetos); sempre com `[s/N]`. Com coisas ligadas, recusa e sugere encerrar ou cancelar.
+  Fonte: FK (31/10), US-16 · Usada em: US-16
+
 # 5. Requisitos nao funcionais
 
 - **RNF-01** Desempenho: todo comando de tarefa (`add`, `edit`, `done`, `reopen`, `rm`) e de consulta (`today`, `ls`, `triage`, `show`) responde em menos de 1 segundo com 10 000 tarefas no banco (5x o uso esperado de um ano, ~2000). As consultas leem so as pendentes quando der.
@@ -750,7 +908,7 @@ Nenhum na fatia 1 (as stories cobrem os fluxos). O primeiro sera a importacao do
 
 # 7. Modelo conceitual
 
-Entidades e relacionamentos da fatia 1 (sem tabelas nem colunas; isso eh o SPEC 8).
+Entidades e relacionamentos das fatias 1, 4 e 2 (sem tabelas nem colunas; isso eh o SPEC 8).
 
 ```
     Disciplina 1 ─────── 0..N Tarefa
@@ -761,8 +919,8 @@ Entidades e relacionamentos da fatia 1 (sem tabelas nem colunas; isso eh o SPEC 
 ```
 
 - **Tarefa:** titulo, descricao, prioridade, prazo, EST, data de criacao, data de conclusao.
-- **Disciplina:** codigo (o que vai depois do `@`), nome.
-- **Projeto:** codigo (o que vai depois do `+`), nome. Os outros atributos (D-06) entram na fatia 2.
+- **Disciplina:** codigo (o que vai depois do `@`), nome, situacao (ativa ou encerrada).
+- **Projeto:** codigo (o que vai depois do `+`), nome, descricao, link do GitHub, pasta local, situacao (ativo, pausado, concluido, cancelado), continuo (sim ou nao), data de criacao.
 
 Relacionamentos:
 - Tarefa **eh de** no maximo uma Disciplina (opcional); uma Disciplina tem varias Tarefas.
@@ -774,6 +932,7 @@ Deduzido, nunca guardado (D-17):
 - tarefa incompleta (RN-02) e tarefa nova (D-11);
 - disciplina efetiva da tarefa (RN-14);
 - tipo do projeto, academico ou pessoal (D-06);
+- progresso e ultima atividade do projeto (RN-20);
 - atrasada, urgente e importante (D-27, fatia 4).
 
 # 8. Decisoes e questoes em aberto
@@ -794,8 +953,8 @@ Deduzido, nunca guardado (D-17):
 - **Q-12** Habito x tarefa recorrente -> resolvida no glossario (Habito)
 - **Q-13** Tarefa recorrente no v0.1? -> resolvida em D-16
 - **Q-14** Criterios de cada nivel de prioridade (A a D), para nem tudo ficar no A nem tudo vazio. -> resolvida na RN-15
-- **Q-15** Adicionar ou concluir tarefa em disciplina ou projeto inativo: o sistema bloqueia, avisa, ou eu so suponho que nao vou fazer? (ex-S-08) *(em aberto)*
-- **Q-16** Disciplina precisa de situacao ou semestre, para saber quais sao as atuais? Hoje so o projeto tem situacao. (ex-S-08) *(em aberto)*
+- **Q-15** Adicionar ou concluir tarefa em disciplina ou projeto inativo: o sistema bloqueia, avisa, ou eu so suponho que nao vou fazer? (ex-S-08) -> resolvida na RN-19
+- **Q-16** Disciplina precisa de situacao ou semestre, para saber quais sao as atuais? Hoje so o projeto tem situacao. (ex-S-08) -> resolvida na RN-21
 - **Q-17** Quais arquivos do Ganbatte importar: todo.txt, done.txt, disciplinas.txt, hunter/avaliacoes.txt, os .json do hunter? (DEP-01) -> parcial: no v0.1 so tarefas e disciplinas; o hunter fica para o v0.2 (D-23); o done.txt eh a Q-18
 - **Q-18** Importar o done.txt (historico antigo de tarefas concluidas)? *(em aberto, fatia de importacao)*
 - **Q-19** Para onde vai a copia do backup: repositorio privado, HD externo (S-09) ou os dois? -> resolvida em D-33
@@ -890,8 +1049,19 @@ Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos 
 | US-09 | CA-09.1 a CA-09.9 | `cmd/neivi`: TestLs; `internal/store`: TestListTasksFilter (09.1 a 09.5); `internal/task`: TestSorts (09.1, 09.5, 09.7), TestMatchWords (09.4), TestFilterIsEmpty (09.8); `internal/todotxt`: TestParseFilter |
 | US-10 | CA-10.1 a CA-10.6 | `cmd/neivi`: TestShow, TestDaysLabel (10.1, 10.3), TestCodeName (10.1) |
 
-**Pendente da fatia 2:** CA-10.5 e a parte "herdada" do `ls @` (RN-14) dependem de o projeto ter disciplina (D-06). Ate la, a disciplina eh so o `@` da propria tarefa.
+| US-11 | CA-11.1 a CA-11.7 | `cmd/neivi`: TestProject; `internal/todotxt`: TestParseProject; `internal/project`: TestStatus |
+| US-12 | CA-12.1 a CA-12.4 | `cmd/neivi`: TestProject; `internal/project`: TestProgress; `internal/store`: TestProjectsAndSubjects |
+| US-13 | CA-13.1 a CA-13.3 | `cmd/neivi`: TestProject; `internal/store`: TestProjectsAndSubjects (13.1) |
+| US-14 | CA-14.1 a CA-14.4 | `cmd/neivi`: TestProject; `internal/todotxt`: TestParseProject |
+| US-15 | CA-15.1 a CA-15.4 | `cmd/neivi`: TestSubject; `internal/todotxt`: TestParseSubject; `internal/store`: TestProjectsAndSubjects |
+| US-16 | CA-16.1 a CA-16.3 | `cmd/neivi`: TestProject, TestSubject; `internal/store`: TestProjectsAndSubjects |
+| US-02, US-03 | CA-02.7, CA-03.8 | `cmd/neivi`: TestProject |
+| US-10 | CA-10.5 | `cmd/neivi`: TestProject; `internal/store`: TestProjectsAndSubjects |
 
 Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por caso. Os criterios que dependem do dia de hoje (prazos com dia da semana) sao conferidos nas funcoes de formatacao e de data, com o "hoje" fixo em ter 10/11/2026, porque os comandos usam o relogio real.
 - **D-34** Nova ordem das fatias: 4 (listagem e resumo) -> 5 (importacao) -> corte das tarefas -> 2 (disciplinas e projetos) -> 3 (habitos) -> corte dos habitos e v0.1. O corte seco (D-24) vira duas etapas: depois da importacao, tarefas so no neivi e o Ganbatte fica ligado so para os habitos; depois da fatia 3, o Ganbatte eh desligado. Os numeros das fatias continuam os mesmos.
-  Porque: preciso comecar a usar o basico (anotar e ver minhas tarefas) o quanto antes, e o uso real melhora os requisitos das fatias seguintes. Custo aceito: por um tempo, tarefas no neivi e habitos no Ganbatte; mudancas no banco depois do corte viram migracoes (sem perder dados).
+  Porque: preciso comecar a usar o basico (anotar e ver minhas tarefas) o quanto antes, e o uso real melhora os requisitos das fatias seguintes. Custo aceito: por um tempo, tarefas no neivi e habitos no Ganbatte; mudancas no banco depois do corte viram migracoes (sem perder dados). *(substituida pela D-35)*
+- **D-35** Volta a ordem: 2 (disciplinas e projetos) -> 3 (habitos) -> 5 (importacao) -> corte unico e v0.1. Substitui a ordem e o corte em duas etapas da D-34.
+  Porque: as fatias 2 e 3 mexem no banco; feitas antes de existirem dados reais, o esquema muda direto no `001_init.sql`, sem migracao, e o corte eh um so, sem tarefas no neivi e habitos no Ganbatte ao mesmo tempo. No ritmo atual, isso atrasa o uso em poucas sessoes.
+- **D-36** O projeto ganha "continuo" (sim ou nao, padrao nao), e a disciplina ganha a situacao (ativa ou encerrada).
+  Porque: o projeto continuo (como a maratona, D-01) nao tem fim, entao a porcentagem de progresso nao faz sentido nele; e as disciplinas antigas precisam sair da lista sem perder o historico.

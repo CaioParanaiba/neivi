@@ -149,10 +149,15 @@ Comandos já definidos:
 | `neivi reopen <id>...` | reabre uma ou mais tarefas concluídas |
 | `neivi edit <id> <texto>` | muda só os campos que aparecem no texto (seção 4) |
 | `neivi rm <id>...` | remove uma ou mais tarefas, pedindo confirmação de cada uma |
-| `neivi subject add <código> [nome]` | cadastra uma disciplina |
-| `neivi subject ls` | lista as disciplinas |
-| `neivi project add <código> [nome]` | cadastra um projeto |
-| `neivi project ls` | lista os projetos |
+| `neivi subject add <código> [nome]` | cadastra uma disciplina (ativa) |
+| `neivi subject ls [all]` | lista as ativas (com `all`, também as encerradas) |
+| `neivi subject edit <código> ...` | muda nome, `sit:ativa`/`sit:encerrada`, `code:novo` |
+| `neivi subject rm <código>` | remove, só sem tarefas nem projetos ligados |
+| `neivi project add <código> [nome] ...` | cadastra um projeto: `@BD`, `gh:usuario/repo`, `dir:pasta`, `cont:sim`, `sit:...`, `-- descrição` |
+| `neivi project ls [all]` | lista ativos e pausados (com `all`, todos) com progresso e última atividade |
+| `neivi project show <código>` | panorama do projeto (C9) com as pendentes |
+| `neivi project edit <código> ...` | muda só o que aparece; `-` apaga; `code:novo` troca o código |
+| `neivi project rm <código>` | remove, só sem tarefas |
 
 **Saída dos comandos de tarefa** (requisitos RNF-04 e RNF-05):
 
@@ -225,17 +230,14 @@ definidos, fatia a fatia. O que ainda falta definir:
 
 Sem convivência: o neivi não escreve no `todo.txt`.
 
-Em duas etapas (requisitos D-34):
+Um corte só, com o v0.1 completo (requisitos D-35):
 
-1. **Corte das tarefas** (depois da importação): importar uma vez (tarefas e
-   disciplinas), conferir e passar a registrar tarefas **só no neivi**. O
-   Ganbatte continua ligado apenas para os hábitos. As chaves do Ganbatte que
-   o neivi não usa (`aula:`, `av:`, `top:`, `gh:`, `esf:`, `rec:`, `rep:`) vão
-   para a descrição da tarefa importada.
+1. Importar uma vez (tarefas e disciplinas), conferir e desligar o
+   `ganbatte.service`. Tarefas e hábitos passam a ser só no neivi. As chaves
+   do Ganbatte que o neivi não usa (`aula:`, `av:`, `top:`, `gh:`, `esf:`,
+   `rec:`, `rep:`) vão para a descrição da tarefa importada.
 2. Nesse dia, a automação externa das 5:50 troca o prompt por algo neutro (o
    `todo.txt` para de ser atualizado) e fica só como gatilho do dia, até a TUI.
-3. **Corte dos hábitos** (depois da fatia de hábitos): desligar o
-   `ganbatte.service`.
 4. Dados que ficam para o v0.2: avaliações e notas (`hunter/avaliacoes.txt`).
    Caçadas, marcos e demais dados do `estado.json` não são migrados.
 
@@ -249,11 +251,11 @@ Em duas etapas (requisitos D-34):
 - **Driver:** `modernc.org/sqlite` (Go puro, sem cgo) com `database/sql`.
 - **Esquema:** `001_init.sql` embutido no binário (`embed`), com
   `CREATE TABLE IF NOT EXISTS`, executado sempre que o banco é aberto. Enquanto
-  não houver dados reais, o esquema muda direto no `001`. Depois do corte das
-  tarefas, o `001` não muda mais (o `IF NOT EXISTS` não altera tabela que já
-  existe): toda mudança vira uma migração nova. O controle de versões
+  não houver dados reais, o esquema muda direto no `001`. Depois do corte, o
+  `001` não muda mais (o `IF NOT EXISTS` não altera tabela que já existe):
+  toda mudança vira uma migração nova. O controle de versões
   (`PRAGMA user_version`, só aplicar o que falta) entra junto com a primeira
-  migração `002`, na fatia de disciplinas e projetos.
+  migração `002`, quando ela for necessária.
 - **Chaves estrangeiras** ligadas em toda conexão (`_pragma=foreign_keys(1)` no
   caminho do banco).
 
@@ -280,10 +282,14 @@ para rodar depois se o PC estava desligado). As cópias ficam em
 Nomes de tabelas e colunas em inglês, como no código.
 
 ```
-subjects  (id, code UNIQUE, name UNIQUE NULL)   -- disciplinas: @BD
-projects  (id, code UNIQUE, name UNIQUE NULL)   -- projetos: +neivi
+subjects  (id, code UNIQUE, name, status 'active'|'closed')   -- disciplinas: @BD
+projects  (id, code UNIQUE, name, description NULL, github NULL, dir NULL,
+           status 'active'|'paused'|'done'|'canceled', continuous 0/1,
+           subject_id NULL -> subjects.id, created_at)          -- projetos: +neivi
   -- o código é o que vai depois do @ ou do +; sem nome, a CLI grava o código
-  -- a D-06 acrescenta campos ao projeto na fatia de projetos
+  -- valores de status em inglês no banco; na tela e na entrada, em português
+  -- progresso e última atividade são contados nas consultas, nunca guardados
+  -- disciplina efetiva da tarefa = COALESCE(tasks.subject_id, projects.subject_id)
 
 tasks
   id INTEGER PK AUTOINCREMENT, title TEXT, description TEXT NULL,
@@ -332,16 +338,16 @@ Feito:
 Daqui em diante, por fatias (cada uma: requisitos → código → testes):
 
 1. Tarefas (retroativa). Fechada em 11/11/2026.
-2. Listagem, filtros e resumo diário (fatia 4 dos requisitos).
-3. Importação (fatia 5; o backup já está pronto).
-4. **Corte das tarefas** (seção 6): começo a usar o neivi para tarefas.
-5. Disciplinas e projetos (fatia 2: D-06, panorama do projeto), com o
-   controle de versões do esquema e a primeira migração `002`.
-6. Hábitos (fatia 3).
-7. **Corte dos hábitos** (seção 6) e uma semana de uso real. Tag `v0.1.0`.
+2. Listagem, filtros e resumo diário (fatia 4 dos requisitos). Fechada em
+   11/11/2026.
+3. Disciplinas e projetos (fatia 2: D-06, panorama do projeto).
+4. Hábitos (fatia 3).
+5. Importação (fatia 5; o backup já está pronto).
+6. **Corte** (seção 6) e uma semana de uso real. Tag `v0.1.0`.
 
-A ordem foi mudada para usar o básico mais cedo (requisitos D-34); os números
-das fatias nos requisitos continuam os mesmos.
+As fatias que mexem no banco (2 e 3) vêm antes da importação, para o esquema
+ficar certo antes de existirem dados reais, sem migração (requisitos D-35); os
+números das fatias nos requisitos continuam os mesmos.
 
 ## 11. Decisões pendentes
 
