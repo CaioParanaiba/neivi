@@ -16,6 +16,8 @@ type Task struct {
 	CreatedAt   string
 	SubjectCode string
 	ProjectCode string
+	SubjectName string
+	ProjectName string
 }
 
 // NormalizeTitle deixa o titulo pronto para comparar duplicadas (RN-01):
