@@ -8,7 +8,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/CaioParanaiba/neivi/internal/store"
@@ -20,7 +19,10 @@ const help = `uso: neivi <comando> [argumentos]
 
 comandos:
   add <texto>                adicionar tarefa
-  ls                         listar tarefas
+  today                      o que tem para hoje
+  triage                     tarefas incompletas (sem prioridade)
+  ls [filtros] [palavras]    listar tarefas (@BD @ @- +proj pri:A new late all done due desc)
+  show <id>                  ver todos os campos de uma tarefa
   done <id>... [ontem]       concluir tarefas (hoje ou ontem)
   reopen <id>...             reabrir tarefas concluidas
   edit <id> <texto>          mudar so os campos do texto
@@ -197,45 +199,6 @@ func parseIDs(args []string, allowOntem bool, example string) ([]int64, bool, er
 	}
 
 	return ids, ontem, nil
-}
-
-func runLs(db *sql.DB, args []string) {
-	lista, err := store.ListTasks(db)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "erro:", err)
-		os.Exit(1)
-	}
-
-	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-
-	fmt.Fprintln(w, "ID\tX\tP\tPRAZO\tEST\tTAREFA")
-
-	for _, v := range lista {
-		done := ""
-		if v.DoneAt != "" {
-			done = "x"
-		}
-
-		if v.Due != "" {
-			d, err := time.Parse("2006-01-02", v.Due)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, "erro:", err)
-				os.Exit(1)
-			}
-			v.Due = d.Format("02/01")
-		}
-
-		fmt.Fprintf(w, "%d\t%s\t%s\t%s\t%s\t%s", v.ID, done, v.Priority, v.Due, formatEst(v.EstimateMin), v.Title)
-		if v.SubjectCode != "" {
-			fmt.Fprintf(w, " @%s", v.SubjectCode)
-		}
-		if v.ProjectCode != "" {
-			fmt.Fprintf(w, " +%s", v.ProjectCode)
-		}
-		fmt.Fprintf(w, "\n")
-	}
-
-	w.Flush()
 }
 
 // testar fazer uma funcao bonita ksksks

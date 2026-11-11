@@ -108,3 +108,41 @@ func TestParseIDs(t *testing.T) {
 		})
 	}
 }
+
+func TestDaysLabel(t *testing.T) {
+	tests := []struct {
+		name string
+		due  string
+		want string
+	}{
+		{"CA-10.3 hoje", "2026-11-10", "hoje"},
+		{"CA-10.3 amanha", "2026-11-11", "amanha"},
+		{"CA-10.1 em 3 dias", "2026-11-13", "em 3 dias"},
+		{"CA-10.3 atrasada 1 dia", "2026-11-09", "atrasada ha 1 dia"},
+		{"CA-10.3 atrasada 5 dias", "2026-11-05", "atrasada ha 5 dias"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := daysLabel(tc.due, today); got != tc.want {
+				t.Errorf("daysLabel(%q) = %q, queria %q", tc.due, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCodeName(t *testing.T) {
+	tests := []struct {
+		code, name, want string
+	}{
+		{"BD", "Projeto de Banco de Dados", "BD (Projeto de Banco de Dados)"},
+		{"ED", "ED", "ED"},
+		{"", "", "-"},
+	}
+
+	for _, tc := range tests {
+		if got := codeName(tc.code, tc.name); got != tc.want {
+			t.Errorf("CA-10.1 codeName(%q, %q) = %q, queria %q", tc.code, tc.name, got, tc.want)
+		}
+	}
+}

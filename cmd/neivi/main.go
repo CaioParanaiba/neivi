@@ -59,6 +59,12 @@ func main() {
 		runAdd(db, os.Args[2:])
 	case "ls":
 		runLs(db, os.Args[2:])
+	case "today":
+		runToday(db, os.Args[2:])
+	case "triage":
+		runTriage(db, os.Args[2:])
+	case "show":
+		runShow(db, os.Args[2:])
 	case "subject":
 		runSubject(db, os.Args[2:])
 	case "project":

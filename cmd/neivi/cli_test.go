@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // bin eh o neivi compilado uma vez para todos os testes deste arquivo
@@ -368,4 +369,343 @@ func TestRm(t *testing.T) {
 			t.Errorf("depois do rm: %q, queria que a 2 nao existisse", errOut)
 		}
 	})
+}
+
+// dia formata uma data relativa a hoje como o neivi mostra ("qua 11/11")
+func dia(daysFromToday int) string {
+	now := time.Now()
+	return formatDue(now.AddDate(0, 0, daysFromToday).Format("2006-01-02"), now)
+}
+
+// entrada dd/mm/aa de uma data relativa a hoje
+func entrada(daysFromToday int) string {
+	return time.Now().AddDate(0, 0, daysFromToday).Format("02/01/06")
+}
+
+func TestToday(t *testing.T) {
+	t.Run("CA-07.1 tres blocos, falta e contador", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("subject", "add", "ED")
+		c.must("subject", "add", "BD")
+		c.must("add", "lista", "3", "@ED", "pri:B", "due:"+entrada(-2), "est:30m")     // 1
+		c.must("add", "entregar", "feedback360", "@BD", "pri:A", "due:hoje", "est:1h") // 2
+		c.must("add", "pagar", "boleto", "pri:C", "due:hoje", "est:30m")               // 3
+		c.must("add", "revisar", "normalizacao", "@BD", "pri:A", "est:2h")             // 4
+		c.must("add", "ligar", "para", "o", "dentista", "pri:A")                       // 5
+		c.must("add", "estudar", "sorting", "pri:B")                                   // 6
+		c.must("add", "comprar", "cabo", "pri:A", "due:"+entrada(5))                   // 7
+		c.must("add", "feita")                                                         // 8
+		c.must("done", "8")
+
+		var tb table
+		rows := [][]string{
+			header(false),
+			{"1", "B", dia(-2), "30m", "lista 3 @ED"},
+			{"2", "A", dia(0), "1h", "entregar feedback360 @BD"},
+			{"3", "C", dia(0), "30m", "pagar boleto"},
+			{"4", "A", "", "2h", "revisar normalizacao @BD"},
+			{"5", "A", "", "", "ligar para o dentista"},
+		}
+		for _, r := range rows {
+			tb.fit(r)
+		}
+		h := tb.line(header(false))
+		want := strings.Join([]string{
+			"atrasadas (1)", h, tb.line(rows[1]), "",
+			"urgentes (2)", h, tb.line(rows[2]), tb.line(rows[3]), "",
+			"importantes (2)", h, tb.line(rows[4]), tb.line(rows[5]), "",
+			"falta: ~4h (1 sem EST)",
+			"hoje: 1 concluidas",
+		}, "\n")
+
+		out, errOut, _ := c.run("", "today")
+		check(t, out, errOut, want, "")
+	})
+
+	t.Run("CA-07.2 sem A sem prazo vira sem prazo", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("add", "estudar", "sorting", "pri:B", "est:1h")
+		c.must("add", "algo", "pri:C")
+
+		out, _, _ := c.run("", "today")
+		if !strings.HasPrefix(out, "sem prazo (1)\n") || strings.Contains(out, "algo") {
+			t.Errorf("queria so o bloco sem prazo com a B:\n%s", out)
+		}
+	})
+
+	tests := []struct {
+		name    string
+		prep    [][]string
+		in      []string
+		wantOut string
+		wantErr string
+	}{
+		{"CA-07.6 dia livre", nil, []string{"today"},
+			"nada para hoje, bom trabalho!\nhoje: 0 concluidas", ""},
+		{"CA-07.7 dia livre com incompletas", [][]string{{"add", "ideia"}, {"add", "outra"}}, []string{"today"},
+			"nada para hoje, bom trabalho!\nvoce tem 2 tarefas incompletas: que tal completar? (neivi triage)\nhoje: 0 concluidas", ""},
+		{"CA-07.8 sem EST", [][]string{{"add", "pagar", "aluguel", "due:hoje"}}, []string{"today"},
+			"", ""}, // conferido abaixo
+		{"CA-07.9 argumento", nil, []string{"today", "xyz"},
+			"", "erro: today nao recebe argumentos (exemplo: neivi today)"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCLI(t)
+			for _, p := range tc.prep {
+				c.must(p...)
+			}
+
+			out, errOut, _ := c.run("", tc.in...)
+			if strings.HasPrefix(tc.name, "CA-07.8") {
+				// CA-07.3 e CA-07.8: incompleta com prazo hoje eh urgente; sem EST nenhuma
+				if !strings.Contains(out, "urgentes (1)") || !strings.Contains(out, "falta: sem EST (1 tarefas)") {
+					t.Errorf("saida:\n%s", out)
+				}
+				return
+			}
+			check(t, out, errOut, tc.wantOut, tc.wantErr)
+		})
+	}
+}
+
+func TestTriage(t *testing.T) {
+	tests := []struct {
+		name    string
+		prep    [][]string
+		in      []string
+		wantOut string
+		wantErr string
+	}{
+		{"CA-08.1 so incompletas, mais antigas primeiro",
+			[][]string{{"add", "comprar", "cabo", "HDMI"}, {"add", "pronta", "pri:B"}, {"add", "ligar"}},
+			[]string{"triage"},
+			"incompletas (2)\nID  P  PRAZO  EST  TAREFA\n1                  comprar cabo HDMI\n3                  ligar", ""},
+		{"CA-08.3 concluida nao aparece",
+			[][]string{{"add", "comprar", "cabo"}, {"add", "ligar"}, {"done", "1"}},
+			[]string{"triage"},
+			"incompletas (1)\nID  P  PRAZO  EST  TAREFA\n2                  ligar", ""},
+		{"CA-08.4 nenhuma", [][]string{{"add", "pronta", "pri:A"}}, []string{"triage"},
+			"nenhuma tarefa incompleta", ""},
+		{"CA-08.5 argumento", nil, []string{"triage", "xyz"},
+			"", "erro: triage nao recebe argumentos (exemplo: neivi triage)"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCLI(t)
+			for _, p := range tc.prep {
+				c.must(p...)
+			}
+
+			out, errOut, _ := c.run("", tc.in...)
+			check(t, out, errOut, tc.wantOut, tc.wantErr)
+		})
+	}
+}
+
+func TestLs(t *testing.T) {
+	// tarefas sem prazo, para a tabela nao depender do dia
+	prep := [][]string{
+		{"subject", "add", "BD"},
+		{"subject", "add", "ED"},
+		{"project", "add", "neivi"},
+		{"add", "entregar", "feedback360", "@BD", "pri:A", "est:1h"}, // 1
+		{"add", "revisar", "normalizacao", "@BD", "pri:A", "est:2h", "--", "slides", "4", "a", "9"}, // 2
+		{"add", "parser", "+neivi", "pri:B"},          // 3
+		{"add", "estudar", "sorting", "@ED", "pri:B"}, // 4
+		{"add", "comprar", "cabo", "HDMI"},            // 5
+		{"add", "ligar"},                              // 6
+		{"done", "6"},
+	}
+
+	tests := []struct {
+		name    string
+		in      []string
+		wantOut string
+		wantErr string
+	}{
+		{"CA-09.1 panorama",
+			[]string{"ls"},
+			expectTable(
+				[]string{"1", "A", "", "1h", "entregar feedback360 @BD"},
+				[]string{"2", "A", "", "2h", "revisar normalizacao @BD …"},
+				[]string{"3", "B", "", "", "parser +neivi"},
+				[]string{"4", "B", "", "", "estudar sorting @ED"},
+				[]string{"5", "", "", "", "comprar cabo HDMI"},
+			), ""},
+		{"CA-09.5 ls done",
+			[]string{"ls", "done"},
+			"ID  P  PRAZO  EST  TAREFA\n6                  ligar", ""},
+		{"CA-09.8 nada encontrado",
+			[]string{"ls", "cabo", "azul"},
+			"nenhuma tarefa com esses filtros (tente menos palavras ou filtros)", ""},
+		{"CA-09.9 disciplina nao cadastrada",
+			[]string{"ls", "@XX"},
+			"", "erro: disciplina XX nao cadastrada (cadastrar: neivi subject add XX)"},
+		{"CA-09.9 projeto nao cadastrado",
+			[]string{"ls", "+XX"},
+			"", "erro: projeto XX nao cadastrado (cadastrar: neivi project add XX)"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCLI(t)
+			for _, p := range prep {
+				c.must(p...)
+			}
+
+			out, errOut, _ := c.run("", tc.in...)
+			check(t, out, errOut, tc.wantOut, tc.wantErr)
+		})
+	}
+
+	ids := func(out string) string {
+		var got []string
+		for _, l := range strings.Split(out, "\n")[1:] {
+			if f := strings.Fields(l); len(f) > 0 && !strings.HasPrefix(l, " ") {
+				got = append(got, f[0])
+			}
+		}
+		return strings.Join(got, " ")
+	}
+
+	filters := []struct {
+		name string
+		in   []string
+		want string
+	}{
+		{"CA-09.2 @BD", []string{"@BD"}, "1 2"},
+		{"CA-09.2 @", []string{"@"}, "1 2 4"},
+		{"CA-09.2 @-", []string{"@-"}, "3 5"},
+		{"CA-09.2 +neivi", []string{"+neivi"}, "3"},
+		{"CA-09.2 +", []string{"+"}, "3"},
+		{"CA-09.2 +-", []string{"+-"}, "1 2 4 5"},
+		{"CA-09.2 pri:A", []string{"pri:A"}, "1 2"},
+		{"CA-09.2 pri:-", []string{"pri:-"}, "5"},
+		{"CA-09.2 new", []string{"new"}, "1 2 3 4 5"},
+		{"CA-09.3 @BD @ED", []string{"@BD", "@ED"}, "1 2 4"},
+		{"CA-09.3 @BD pri:A", []string{"@BD", "pri:A"}, "1 2"},
+		{"CA-09.4 busca com acento", []string{"Normalização"}, "2"},
+		{"CA-09.4 todas as palavras", []string{"cabo", "hdmi"}, "5"},
+		{"CA-09.5 ls all, concluidas no fim", []string{"all"}, "1 2 3 4 5 6"},
+	}
+
+	for _, tc := range filters {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCLI(t)
+			for _, p := range prep {
+				c.must(p...)
+			}
+
+			out, _, _ := c.run("", append([]string{"ls"}, tc.in...)...)
+			if got := ids(out); got != tc.want {
+				t.Errorf("ids = %q, queria %q\n%s", got, tc.want, out)
+			}
+		})
+	}
+
+	t.Run("CA-09.5 coluna X so no all", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+
+		out, _, _ := c.run("", "ls", "all")
+		lines := strings.Split(out, "\n")
+		if !strings.HasPrefix(lines[0], "ID  X  P") || !strings.HasPrefix(lines[len(lines)-1], "6   x") {
+			t.Errorf("queria a coluna X e a concluida no fim:\n%s", out)
+		}
+	})
+
+	t.Run("CA-09.6 ls desc", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+
+		out, _, _ := c.run("", "ls", "desc", "@BD")
+		if strings.Contains(out, "…") || !strings.HasSuffix(out, "  slides 4 a 9") {
+			t.Errorf("queria a descricao embaixo, sem o …:\n%s", out)
+		}
+	})
+}
+
+// expectTable monta a tabela esperada (cabecalho sem X + linhas) com o mesmo alinhamento do neivi
+func expectTable(rows ...[]string) string {
+	var tb table
+	tb.fit(header(false))
+	for _, r := range rows {
+		tb.fit(r)
+	}
+
+	lines := []string{tb.line(header(false))}
+	for _, r := range rows {
+		lines = append(lines, tb.line(r))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func TestShow(t *testing.T) {
+	prep := [][]string{
+		{"subject", "add", "BD", "Projeto", "de", "Banco", "de", "Dados"},
+		{"add", "revisar", "normalizacao", "@BD", "pri:A", "due:" + entrada(2), "est:2h", "--", "slides", "4", "a", "9"}, // 1
+		{"add", "comprar", "cabo"}, // 2
+		{"add", "ligar"},           // 3
+		{"done", "3"},
+	}
+
+	tests := []struct {
+		name    string
+		in      []string
+		wantOut string
+		wantErr string
+	}{
+		{"CA-10.1 todos os campos", []string{"show", "1"},
+			"tarefa 1 · revisar normalizacao\n" +
+				"  prioridade:  A\n" +
+				"  prazo:       " + dia(2) + " (em 2 dias)\n" +
+				"  EST:         2h\n" +
+				"  disciplina:  BD (Projeto de Banco de Dados)\n" +
+				"  projeto:     -\n" +
+				"  criada:      " + dia(0) + " (nova)\n" +
+				"  situacao:    pendente\n" +
+				"\n" +
+				"  slides 4 a 9", ""},
+		{"CA-10.2 e CA-10.4 incompleta, campos vazios", []string{"show", "2"},
+			"tarefa 2 · comprar cabo\n" +
+				"  prioridade:  -\n" +
+				"  prazo:       -\n" +
+				"  EST:         -\n" +
+				"  disciplina:  -\n" +
+				"  projeto:     -\n" +
+				"  criada:      " + dia(0) + " (nova)\n" +
+				"  situacao:    incompleta", ""},
+		{"CA-10.4 concluida", []string{"show", "3"},
+			"tarefa 3 · ligar\n" +
+				"  prioridade:  -\n" +
+				"  prazo:       -\n" +
+				"  EST:         -\n" +
+				"  disciplina:  -\n" +
+				"  projeto:     -\n" +
+				"  criada:      " + dia(0) + " (nova)\n" +
+				"  situacao:    concluida em " + dia(0), ""},
+		{"CA-10.6 nao existe", []string{"show", "99"}, "", "erro: tarefa 99 nao existe (veja os ids no neivi ls)"},
+		{"CA-10.6 id invalido", []string{"show", "abc"}, "", "erro: id abc invalido (use o numero que aparece no ls)"},
+		{"CA-10.6 sem id", []string{"show"}, "", "erro: falta o id da tarefa (exemplo: neivi show 2)"},
+		{"CA-10.6 mais de um id", []string{"show", "1", "2"}, "", "erro: show mostra uma tarefa por vez (exemplo: neivi show 2)"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCLI(t)
+			for _, p := range prep {
+				c.must(p...)
+			}
+
+			out, errOut, _ := c.run("", tc.in...)
+			check(t, out, errOut, tc.wantOut, tc.wantErr)
+		})
+	}
 }
