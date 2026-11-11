@@ -36,6 +36,12 @@ comandos:
   project show <code>        panorama do projeto
   project edit <code> ...    mudar campos (sit:pausado, dir:-, code:novo ...)
   project rm <code>          remover projeto sem tarefas
+  habit add <code> [nome]    adicionar habito (meta:3, sem:3 ou dias:seg,qua,sex)
+  habit do <habito>... [ontem]   registrar (codigo ou id; x2 = quantidade)
+  habit undo <habito>... [ontem] desfazer um registro
+  habit ls [all]             listar habitos (all: tambem os arquivados)
+  habit edit <code> ...      mudar nome, meta, periodicidade, sit:arquivado, code:novo
+  habit rm <code>            remover habito sem registros
 `
 
 func usage() {

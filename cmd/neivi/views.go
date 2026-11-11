@@ -268,6 +268,8 @@ func runToday(db *sql.DB, args []string) {
 		os.Exit(1)
 	}
 	fmt.Printf("hoje: %d concluidas\n", n)
+
+	printHabitsToday(db, now)
 }
 
 func runTriage(db *sql.DB, args []string) {

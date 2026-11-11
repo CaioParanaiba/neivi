@@ -65,6 +65,8 @@ func main() {
 		runTriage(db, os.Args[2:])
 	case "show":
 		runShow(db, os.Args[2:])
+	case "habit":
+		runHabit(db, os.Args[2:])
 	case "subject":
 		runSubject(db, os.Args[2:])
 	case "project":

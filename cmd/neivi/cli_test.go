@@ -907,3 +907,139 @@ func expectGrid(head []string, rows ...[]string) string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+func TestHabit(t *testing.T) {
+	// dias da semana relativos a hoje, para o teste valer em qualquer dia
+	short := [...]string{"dom", "seg", "ter", "qua", "qui", "sex", "sab"}
+	long := [...]string{"domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"}
+	wd := int(time.Now().Weekday())
+	hoje, outro := short[wd], short[(wd+1)%7]
+
+	prep := [][]string{
+		{"habit", "add", "digi", "Treino", "de", "digitacao"},     // 1
+		{"habit", "add", "cf", "Codeforces", "meta:3"},            // 2
+		{"habit", "add", "neivi", "Brincar", "com", "a", "Neivi"}, // 3
+	}
+
+	runCases(t, prep, []cliCase{
+		{name: "CA-17.1 todo dia", in: []string{"habit", "add", "soneca", "Acordar", "sem", "soneca"}, wantOut: "+ 4 · soneca · Acordar sem soneca · todo dia"},
+		{name: "CA-17.1 por semana", in: []string{"habit", "add", "lixo", "Descer", "o", "lixo", "sem:3"}, wantOut: "+ 4 · lixo · Descer o lixo · 3 por semana"},
+		{name: "CA-17.1 dias", in: []string{"habit", "add", "ingles", "dias:seg,qua,sex"}, wantOut: "+ 4 · ingles · seg, qua, sex"},
+		{name: "CA-17.3 codigo repetido", in: []string{"habit", "add", "cf"}, wantErr: "erro: ja existe um habito cf (para mudar: neivi habit edit cf)"},
+		{name: "CA-17.3 codigo numero", in: []string{"habit", "add", "3"}, wantErr: "erro: o codigo 3 nao pode ser so um numero (ele se confundiria com o id)"},
+
+		{name: "CA-18.1 varios, com quantidade", in: []string{"habit", "do", "cf", "x2", "neivi"},
+			wantOut: "✓ cf · 2/3 hoje\n✓ neivi · feito hoje\nfaltam hoje: digi, cf (1)"},
+		{name: "CA-18.2 pelo id", in: []string{"habit", "do", "1"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), neivi"},
+		{name: "CA-18.3 ontem", in: []string{"habit", "do", "digi", "neivi", "ontem"},
+			wantOut: "✓ digi · feito ontem (ontem)\n✓ neivi · feito ontem (ontem)\nfaltam hoje: digi, cf (3), neivi"},
+		{name: "CA-18.5 tudo feito", in: []string{"habit", "do", "digi", "cf", "x3", "neivi"},
+			wantOut: "✓ digi · feito hoje\n✓ cf · 3/3 hoje\n✓ neivi · feito hoje\nhabitos: tudo feito hoje ✓"},
+		{name: "CA-18.8 id que nao existe segue", in: []string{"habit", "do", "cf", "99"},
+			wantOut: "✓ cf · 1/3 hoje\nfaltam hoje: digi, cf (2), neivi", wantErr: "aviso: habito 99 nao existe (veja os habitos no neivi habit ls)"},
+		{name: "CA-18.8 codigo errado recusa tudo", in: []string{"habit", "do", "cf", "liixo"},
+			wantErr: `erro: "liixo" nao eh um habito, quantidade (x2) nem "ontem" (veja os habitos no neivi habit ls)`},
+		{name: "CA-18.8 x2 antes", in: []string{"habit", "do", "x2", "cf"}, wantErr: "erro: x2 precisa vir depois de um habito (exemplo: neivi habit do cf x2)"},
+		{name: "CA-18.8 sem habito", in: []string{"habit", "do"}, wantErr: "erro: falta o habito (exemplo: neivi habit do cf x2 lixo)"},
+
+		{name: "CA-19.2 lista", in: []string{"habit", "ls"},
+			wantOut: expectGrid([]string{"ID", "HABITO", "META", "FEITO", "NOME"},
+				[]string{"1", "digi", "todo dia", "0/1", "Treino de digitacao"},
+				[]string{"2", "cf", "3 todo dia", "0/3", "Codeforces"},
+				[]string{"3", "neivi", "todo dia", "0/1", "Brincar com a Neivi"})},
+
+		{name: "CA-20.3 undo sem registro", in: []string{"habit", "undo", "cf"},
+			wantOut: "faltam hoje: digi, cf (3), neivi", wantErr: "aviso: cf nao tem registro hoje"},
+		{name: "CA-21.1 mudar a meta", in: []string{"habit", "edit", "cf", "meta:5"}, wantOut: "~ 2 · cf · Codeforces · 5 todo dia"},
+		{name: "CA-21.3 arquivar", in: []string{"habit", "edit", "digi", "sit:arquivado"}, wantOut: "~ 1 · digi · Treino de digitacao · arquivado"},
+		{name: "CA-21.6 nada para mudar", in: []string{"habit", "edit", "cf"}, wantErr: "erro: nada para mudar no habito cf (exemplo: neivi habit edit cf meta:5)"},
+		{name: "CA-21.4 remover sem registros", stdin: "s\n", in: []string{"habit", "rm", "neivi"},
+			wantOut: "remover o habito neivi (sem registros)? [s/N] ✗ neivi removido"},
+		{name: "CA-19.6 sem habitos", in: []string{"habit", "rm", "xx"}, wantErr: "erro: habito xx nao existe (veja os habitos no neivi habit ls all)"},
+	})
+
+	t.Run("CA-18.4 e CA-20.1 passar da meta e desfazer", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		c.must("habit", "do", "cf", "x3")
+		out, _, _ := c.run("", "habit", "do", "cf", "x2")
+		if !strings.HasPrefix(out, "✓ cf · 5/3 hoje") {
+			t.Errorf("passar da meta: %q", out)
+		}
+		out, _, _ = c.run("", "habit", "undo", "cf", "x2")
+		if !strings.HasPrefix(out, "↺ cf · 3/3 hoje") {
+			t.Errorf("undo: %q", out)
+		}
+		out, errOut, _ := c.run("", "habit", "undo", "cf", "x9")
+		if !strings.HasPrefix(out, "↺ cf · 0/3 hoje") || errOut != "aviso: cf so tinha 3 hoje" {
+			t.Errorf("CA-20.2 undo alem do zero: %q %q", out, errOut)
+		}
+	})
+
+	t.Run("CA-18.6 fora do dia avisa", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("habit", "add", "ingles", "dias:"+outro)
+		_, errOut, _ := c.run("", "habit", "do", "ingles")
+		if errOut != "aviso: ingles nao eh de "+long[wd] {
+			t.Errorf("aviso = %q", errOut)
+		}
+	})
+
+	t.Run("CA-18.7 arquivado avisa", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("habit", "add", "digi", "sit:arquivado")
+		_, errOut, _ := c.run("", "habit", "do", "digi")
+		if errOut != "aviso: o habito digi esta arquivado (reativar: neivi habit edit digi sit:ativo)" {
+			t.Errorf("aviso = %q", errOut)
+		}
+	})
+
+	t.Run("CA-19.1 e CA-19.4 bloco no today, so os que faltam e so no dia", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("habit", "add", "digi")
+		c.must("habit", "add", "cf", "meta:3")
+		c.must("habit", "add", "lixo", "sem:3")
+		c.must("habit", "add", "ingles", "dias:"+hoje)
+		c.must("habit", "add", "outro", "dias:"+outro)
+		c.must("habit", "do", "digi", "cf", "x2")
+
+		out, _, _ := c.run("", "today")
+		want := "habitos (3)\n" + expectGrid([]string{"ID", "HABITO", "FEITO"},
+			[]string{"2", "cf", "2/3"},
+			[]string{"3", "lixo", "0/3 na semana"},
+			[]string{"4", "ingles", "0/1"})
+		if !strings.HasSuffix(out, want) {
+			t.Errorf("today:\n%s\nqueria terminar com:\n%s", out, want)
+		}
+
+		c.must("habit", "do", "cf", "lixo", "x3", "ingles")
+		out, _, _ = c.run("", "today")
+		if !strings.HasSuffix(out, "hoje: 0 concluidas\n\nhabitos: tudo feito hoje ✓") {
+			t.Errorf("CA-19.1 tudo feito:\n%s", out)
+		}
+	})
+
+	t.Run("CA-19.5 all mostra os arquivados depois", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("habit", "add", "digi", "sit:arquivado")
+		c.must("habit", "add", "cf")
+		out, _, _ := c.run("", "habit", "ls", "all")
+		lines := strings.Split(out, "\n")
+		if len(lines) != 3 || !strings.Contains(lines[0], "SITUACAO") || !strings.Contains(lines[2], "arquivado") {
+			t.Errorf("ls all:\n%s", out)
+		}
+	})
+
+	t.Run("CA-21.5 remover com registros recusa", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("habit", "add", "cf")
+		c.must("habit", "do", "cf")
+		_, errOut, _ := c.run("", "habit", "rm", "cf")
+		if errOut != "erro: o habito cf tem 1 registros (para parar sem perder o historico: neivi habit edit cf sit:arquivado)" {
+			t.Errorf("erro = %q", errOut)
+		}
+	})
+}
