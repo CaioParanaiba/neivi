@@ -236,6 +236,10 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
 | US-04 | Concluir tarefas | Must | 1 | C4, C10 | testada |
 | US-05 | Reabrir tarefas | Must | 1 | C4 | testada |
 | US-06 | Remover tarefas | Must | 1 | C8, C2 | testada |
+| US-07 | Ver o que tem para hoje | Must | 4 | C1, C4 | testada |
+| US-08 | Ver as tarefas incompletas | Must | 4 | C8 | testada |
+| US-09 | Ver o panorama das tarefas, com foco quando quiser | Must | 4 | C8, C7, C9, C4 | testada |
+| US-10 | Consultar uma tarefa | Must | 4 | C4, C9 | testada |
 
 Prioridade: Must (sem ela o v0.1 nao fica pronto, D-22), Should (importante, mas da para viver sem), Could (se sobrar tempo).
 Status: - (nao escrita), rascunho, pronta, testada.
@@ -488,6 +492,193 @@ Prioridade: Must · Fatia: 1 · Cenarios: C8, C2 · Regras: RN-01, RN-12, RN-13
 
 ---
 
+## Fatia 4 · Listagem e resumo diario
+
+---
+
+### US-07 · Ver o que tem para hoje
+
+Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
+
+**Como** eu, ao ligar o PC (C1) e ao longo do dia, depois de concluir uma tarefa (C4),
+**quero** ver de uma vez o que tem para hoje (atrasadas, urgentes e importantes), com o tempo estimado do que falta,
+**para** me preparar para o dia em ~1 min e escolher a proxima tarefa sem montar filtro.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026; 3 tarefas ja concluidas hoje)
+- **CA-07.1** *(caminho feliz)* Dado as pendentes:
+  5 `lista 3 @ED pri:B due:09/11/26 est:30m`, 3 `entregar parte do feedback360 @BD pri:A due:hoje est:1h`,
+  7 `pagar boleto pri:C due:hoje est:30m`, 2 `revisar normalizacao @BD pri:A est:2h`, 8 `ligar para o dentista pri:A`,
+  9 `estudar sorting pri:B` e 10 `comprar cabo pri:A due:sex`,
+  quando registro `neivi today`, entao aparece:
+
+      atrasadas (1)
+      ID  P  PRAZO      EST  TAREFA
+      5   B  seg 09/11  30m  lista 3 @ED
+
+      urgentes (2)
+      ID  P  PRAZO      EST  TAREFA
+      3   A  qua 11/11  1h   entregar parte do feedback360 @BD
+      7   C  qua 11/11  30m  pagar boleto
+
+      importantes (2)
+      ID  P  PRAZO      EST  TAREFA
+      2   A             2h   revisar normalizacao @BD
+      8   A                  ligar para o dentista
+
+      falta: ~4h (1 sem EST)
+      hoje: 3 concluidas
+
+  (cada grupo eh uma tabela com o proprio cabecalho; as colunas tem a mesma largura em todos os grupos)
+
+  (a 9 nao aparece porque ha A sem prazo; a 10 so aparece no dia dela ou quando atrasar; concluidas nunca aparecem)
+- **CA-07.2** *(limite, sem A sem prazo)* Dado que nao ha nenhuma A sem prazo e ha as B sem prazo 9 `estudar sorting` e 12 `levantamento de notebook`,
+  entao o bloco 3 vira `sem prazo (2)` com as duas (RN-16).
+- **CA-07.3** *(limite, incompleta com prazo hoje)* Dado 13 `pagar aluguel due:hoje` sem prioridade,
+  entao ela aparece como uma linha em urgentes, sem prioridade (RN-16).
+- **CA-07.4** *(limite, incompleta sem prazo)* Dado 14 `ideia qualquer`, sem prioridade e sem prazo,
+  entao ela nao aparece em nenhum bloco (RN-16).
+- **CA-07.5** *(limite, bloco vazio)* Dado que nao ha atrasadas,
+  entao o bloco `atrasadas` nao aparece.
+- **CA-07.6** *(estado, dia livre)* Dado que nada se encaixa nos tres blocos e nao ha incompletas,
+  entao aparece `nada para hoje, bom trabalho!` e `hoje: 3 concluidas`.
+- **CA-07.7** *(estado, dia livre com incompletas)* Dado que nada se encaixa nos tres blocos e ha 4 incompletas,
+  entao aparece `nada para hoje, bom trabalho!`, `voce tem 4 tarefas incompletas: que tal completar? (neivi triage)` e `hoje: 3 concluidas`.
+- **CA-07.8** *(limite, EST)* Dado que nenhuma tarefa mostrada tem EST,
+  entao aparece `falta: sem EST (3 tarefas)` no lugar da soma.
+- **CA-07.9** *(entrada invalida)* Quando registro `neivi today xyz`,
+  entao aparece `erro: today nao recebe argumentos (exemplo: neivi today)`.
+
+**Notas:** o contador aparece sempre, mesmo `hoje: 0 concluidas`. Os habitos do dia entram abaixo na fatia 3.
+
+---
+
+### US-08 · Ver as tarefas incompletas
+
+Prioridade: Must · Fatia: 4 · Cenarios: C8 · Regras: RN-02, RN-17
+
+**Como** eu, na revisao do dia (C8), ou quando o today sugere num dia livre,
+**quero** ver so as tarefas incompletas, das mais antigas para as mais novas,
+**para** decidir a prioridade delas e parar de adiar essa escolha.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026)
+- **CA-08.1** *(caminho feliz)* Dado as incompletas 4 `comprar cabo HDMI` (criada em 05/11), 9 `ligar` (10/11) e 12 `pagar aluguel due:sex` (hoje), e outras tarefas com prioridade,
+  quando registro `neivi triage`, entao aparece:
+
+      incompletas (3)
+      ID  P  PRAZO      EST  TAREFA
+      4                      comprar cabo HDMI
+      9                      ligar
+      12     sex 13/11       pagar aluguel
+
+- **CA-08.2** *(caminho feliz, alternativa)* `neivi ls pri:-` mostra as mesmas tarefas (story do ls).
+- **CA-08.3** *(limite)* Dado a incompleta 4 concluida, entao ela nao aparece.
+- **CA-08.4** *(estado)* Dado que nao ha incompletas, entao aparece `nenhuma tarefa incompleta`.
+- **CA-08.5** *(entrada invalida)* Quando registro `neivi triage xyz`,
+  entao aparece `erro: triage nao recebe argumentos (exemplo: neivi triage)`.
+
+**Notas:** sem mostrar ha quantos dias cada uma esta esperando; se fizer falta, entra depois.
+
+---
+
+### US-09 · Ver o panorama das tarefas, com foco quando quiser
+
+Prioridade: Must · Fatia: 4 · Cenarios: C8, C7, C9, C4 · Regras: RN-14, RN-17, RN-18
+
+**Como** eu, quando chega uma demanda nova e preciso reavaliar tudo, ou quando quero focar so nas aulas (C7) ou num projeto (C9),
+**quero** ver todas as tarefas pendentes numa tabela, e filtrar por disciplina, projeto, prioridade, tarefas novas ou palavras do titulo,
+**para** redefinir prioridades olhando o todo, ou organizar uma parte sem ver o resto.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026; @BD e @ED cadastradas; +neivi cadastrado)
+Pendentes: 3 `entregar parte do feedback360 @BD pri:A due:hoje est:1h`, 2 `revisar normalizacao @BD pri:A est:2h -- slides 4 a 9`,
+11 `parser +neivi pri:B due:sex`, 9 `estudar sorting @ED pri:B` (criada em 05/11) e 4 `comprar cabo HDMI` (incompleta).
+Concluida hoje: 1 `ligar`. Todas, menos a 9, criadas hoje.
+
+- **CA-09.1** *(caminho feliz)* Quando registro `neivi ls`, entao aparecem as pendentes na ordem padrao (RN-17):
+
+      ID  P  PRAZO      EST  TAREFA
+      3   A  qua 11/11  1h   entregar parte do feedback360 @BD
+      2   A             2h   revisar normalizacao @BD …
+      11  B  sex 13/11       parser +neivi
+      9   B                  estudar sorting @ED
+      4                      comprar cabo HDMI
+
+- **CA-09.2** *(caminho feliz, foco)* Os filtros mostram so uma parte (RN-18):
+
+  | Entrada          | Tarefas        |
+  |------------------|----------------|
+  | `neivi ls @BD`   | 3, 2           |
+  | `neivi ls @`     | 3, 2, 9        |
+  | `neivi ls @-`    | 11, 4          |
+  | `neivi ls +neivi`| 11             |
+  | `neivi ls +`     | 11             |
+  | `neivi ls +-`    | 3, 2, 9, 4     |
+  | `neivi ls pri:A` | 3, 2           |
+  | `neivi ls pri:-` | 4 (igual ao `neivi triage`) |
+  | `neivi ls new`   | 3, 2, 11, 4 (criadas hoje ou ontem, D-11) |
+
+- **CA-09.3** *(caminho feliz, combinar)* Mesmo tipo eh "ou", tipos diferentes sao "e" (RN-18):
+  `neivi ls @BD @ED` mostra 3, 2, 9; `neivi ls @BD pri:A` mostra 3, 2; `neivi ls new @BD` mostra 3, 2.
+- **CA-09.4** *(caminho feliz, busca)* Palavras buscam no titulo; todas precisam aparecer; maiusculas e acentos nao importam (RN-18):
+  `neivi ls Normalização` mostra 2; `neivi ls cabo hdmi` mostra 4.
+- **CA-09.5** *(caminho feliz, concluidas)* `neivi ls all` mostra as pendentes na ordem padrao e, no fim, as concluidas das mais recentes para as mais antigas, com a coluna `X`:
+
+      ID  X  P  PRAZO      EST  TAREFA
+      3      A  qua 11/11  1h   entregar parte do feedback360 @BD
+      ...
+      4                         comprar cabo HDMI
+      1   x                     ligar
+
+  `neivi ls done` mostra so as concluidas, das mais recentes para as mais antigas, sem a coluna `X`.
+- **CA-09.6** *(caminho feliz, descricao)* `neivi ls desc` mostra a descricao embaixo da tarefa, recuada, no lugar do `…`.
+- **CA-09.7** *(caminho feliz, prazo)* `neivi ls due` ordena por prazo -> prioridade -> EST -> id (a ordem do resumo diario, RN-17): 3, 11, 2, 9, 4.
+- **CA-09.8** *(estado, nada encontrado)* Sem pendentes, `neivi ls` mostra `nenhuma tarefa pendente`.
+  Com filtro ou busca sem resultado, `neivi ls cabo azul` mostra `nenhuma tarefa com esses filtros (tente menos palavras ou filtros)`.
+- **CA-09.9** *(entrada invalida)* `neivi ls @XX` mostra `erro: disciplina XX nao cadastrada (cadastrar: neivi subject add XX)`; o mesmo para `+XX`.
+
+**Notas:** a revisao semanal (C10) fica fora (decidir depois do corte das tarefas). `all`, `done`, `late`, `new`, `due` e `desc` sao reservadas e nao servem para busca.
+
+---
+
+### US-10 · Consultar uma tarefa
+
+Prioridade: Must · Fatia: 4 · Cenarios: C4, C9 · Regras: RN-02, RN-14
+
+**Como** eu, antes de comecar uma tarefa ou quando preciso lembrar do que ela se trata,
+**quero** ver todos os campos de uma tarefa, inclusive a descricao inteira,
+**para** entender a tarefa sem depender so do titulo.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026; @BD = "Projeto de Banco de Dados")
+- **CA-10.1** *(caminho feliz)* Dado a tarefa 2 `revisar normalizacao @BD pri:A due:sex est:2h -- slides 4 a 9 da aula de segunda`, criada ontem,
+  quando registro `neivi show 2`, entao aparece:
+
+      tarefa 2 · revisar normalizacao
+        prioridade:  A
+        prazo:       sex 13/11 (em 2 dias)
+        EST:         2h
+        disciplina:  BD (Projeto de Banco de Dados)
+        projeto:     -
+        criada:      ter 10/11 (nova)
+        situacao:    pendente
+
+        slides 4 a 9 da aula de segunda
+
+- **CA-10.2** *(limite, campos vazios)* Campos sem valor aparecem como `-`; sem descricao, nao aparece a linha em branco nem o texto.
+- **CA-10.3** *(limite, prazo deduzido)* O parenteses do prazo diz `hoje`, `amanha`, `em N dias` ou `atrasada ha N dias`.
+- **CA-10.4** *(limite, situacao)* `situacao` eh `pendente`, `incompleta` (sem prioridade, RN-02) ou `concluida em qua 11/11`; tarefa concluida nao tem o parenteses do prazo.
+- **CA-10.5** *(limite, disciplina herdada)* Dado uma tarefa sem `@` de um projeto de BD, `disciplina` mostra `BD (do projeto)` (RN-14).
+- **CA-10.6** *(entrada invalida)* (mesmas mensagens do edit):
+
+  | Entrada            | Mensagem |
+  |--------------------|----------|
+  | `neivi show 99`    | `erro: tarefa 99 nao existe (veja os ids no neivi ls)` |
+  | `neivi show abc`   | `erro: id abc invalido (use o numero que aparece no ls)` |
+  | `neivi show`       | `erro: falta o id da tarefa (exemplo: neivi show 2)` |
+  | `neivi show 2 3`   | `erro: show mostra uma tarefa por vez (exemplo: neivi show 2)` |
+
+**Notas:** o formato pode mudar com o uso.
+
+---
+
 # 4. Regras de negocio
 
 Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte) e onde eh usada.
@@ -532,9 +723,16 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 
   Fonte: Q-14 · Usada em: US-02, US-03
 
+- **RN-16** Resumo diario: tres blocos de tarefas pendentes, nesta ordem: atrasadas (prazo antes de hoje), urgentes (prazo hoje, qualquer prioridade, inclusive sem prioridade) e importantes (prioridade A sem prazo). Se nao ha nenhuma A sem prazo, o terceiro bloco vira "sem prazo" e mostra todas do nivel mais alto que existir entre as sem prazo (B, senao C, senao D). Incompleta sem prazo nunca aparece. Bloco vazio nao aparece; se os tres estao vazios, "nada para hoje" (com a dica do triage se houver incompletas).
+  Fonte: D-27, CA-07.1 a CA-07.7 · Usada em: US-07
+- **RN-17** Ordenacao: no resumo diario, prazo (mais antigo primeiro) -> prioridade (A a D, sem prioridade por ultimo) -> EST (mais rapidas primeiro, sem EST por ultimo) -> id. Na listagem padrao, prioridade -> prazo -> EST -> id. No triage, data de criacao (mais antiga primeiro) -> id.
+  Fonte: D-04, D-28, US-08 · Usada em: US-07, US-08, US-09
+- **RN-18** Filtros da listagem: `@codigo`, `+codigo`, `pri:X` escolhem; `@` e `+` sozinhos = qualquer disciplina / qualquer projeto; `@-`, `+-`, `pri:-` = sem. Disciplina usa a disciplina efetiva (RN-14). `new` = criadas hoje ou ontem (D-11); `late` = atrasadas. Filtros do mesmo tipo sao "ou"; de tipos diferentes, "e". Outras palavras buscam no titulo: todas precisam aparecer, ignorando maiusculas e acentos. Palavras reservadas (`all`, `done`, `late`, `new`, `due`, `desc`) nao entram na busca.
+  Fonte: decisoes de 04/11 (SPEC 5), D-11, US-09 · Usada em: US-08, US-09
+
 # 5. Requisitos nao funcionais
 
-- **RNF-01** Desempenho: todo comando de tarefa (`add`, `edit`, `done`, `reopen`, `rm`) responde em menos de 1 segundo com 10 000 tarefas no banco (5x o uso esperado de um ano, ~2000).
+- **RNF-01** Desempenho: todo comando de tarefa (`add`, `edit`, `done`, `reopen`, `rm`) e de consulta (`today`, `ls`, `triage`, `show`) responde em menos de 1 segundo com 10 000 tarefas no banco (5x o uso esperado de um ano, ~2000). As consultas leem so as pendentes quando der.
   Como verificar: `time` num banco de teste gerado com 10 000 tarefas. · Fonte: C2
 - **RNF-02** Confiabilidade (copia local): uma copia diaria consistente do banco (nunca `cp` do arquivo aberto), conferida com `integrity_check`, guardando as 7 ultimas diarias e 4 semanais. Perda maxima aceita: 1 dia.
   Como verificar: o timer roda todo dia; uma vez por mes, restaurar uma copia num banco separado e conferir que o neivi abre e lista as tarefas. · Fonte: DEP-02, D-29
@@ -543,6 +741,7 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 - **RNF-04** Usabilidade (mensagens): toda mensagem de erro ou aviso diz o que esta errado e como resolver, sem detalhes internos do programa (ex.: nada de `strconv.ParseInt`).
   Como verificar: os CAs de entrada invalida das stories. · Fonte: US-02 a US-06
 - **RNF-05** Usabilidade (confirmacao): depois de criar, editar, concluir, reabrir ou remover, o neivi mostra a tarefa numa linha curta: simbolo (`+` criar, `~` editar, `✓` concluir, `↺` reabrir, `✗` remover), id, prioridade, prazo (`dia dd/mm`, com o ano so quando nao eh o atual), EST, titulo, `@disciplina`, `+projeto` e `…` se tiver descricao. Campos vazios nao aparecem. O `done` termina com o contador do dia.
+  A linha curta eh so para confirmacoes (uma tarefa). Listas (`today`, `ls`, `triage`) usam tabela: `ID P PRAZO EST TAREFA` (o `X` so no `ls all`), prazo como `qua 11/11`, colunas alinhadas.
   Como verificar: os CAs de caminho feliz das stories. · Fonte: US-01 a US-06
 
 # 6. Casos de uso
@@ -656,7 +855,7 @@ Deduzido, nunca guardado (D-17):
 - **D-26** Sem sequencia (streak) e sem dias de folga no v0.1. A folga, quando vier, eh uma regra de calculo sobre os registros: os dias que faltaram sao perdoados na conta, sem mudar os dados, inclusive no passado.
   Porque: a sequencia so faz sentido com a visualizacao da TUI; guardando os registros de cada dia, ela sai deles depois (D-17).
 - **D-27** Resumo diario em tres blocos, nesta ordem: atrasadas, urgentes (prazo hoje, qualquer prioridade) e importantes (prioridade A sem prazo). Tarefa A com prazo futuro so aparece no dia dela ou quando atrasar. Substitui a D-09.
-  Porque: uma tarefa B com prazo hoje tambem nao pode esperar; e o resumo continua curto, de ~1 min (C1). O resumo eh o C1 (primeira vez do dia), diferente da revisao do C8 (primeiro bloco livre).
+  Porque: uma tarefa B com prazo hoje tambem nao pode esperar; e o resumo continua curto, de ~1 min (C1). O resumo eh o C1 (primeira vez do dia), diferente da revisao do C8 (primeiro bloco livre). *(completada na RN-16)*
 - **D-28** Ordenacao: a da D-04, com o id como ultimo desempate.
   Porque: a ordem nunca muda entre duas listagens iguais.
 - **D-29** Backup diario automatico entra no v0.1, como RNF (secao 5). A S-09 complementa, nao substitui.
@@ -686,5 +885,13 @@ Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos 
 | US-05 | CA-05.1 a 05.4 | `cmd/neivi`: TestReopen, TestParseIDs; `internal/store`: TestReopenTask |
 | US-06 | CA-06.1 a 06.5 | `cmd/neivi`: TestRm; `internal/store`: TestRmTask |
 
-Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por caso. Os criterios que dependem do dia de hoje (prazos com dia da semana) sao conferidos nas funcoes de formatacao e de data, com o "hoje" fixo em ter 10/11/2026, porque os comandos usam o relogio real.
+| US-07 | CA-07.1 a CA-07.9 | `cmd/neivi`: TestToday (07.1, 07.2, 07.3, 07.6 a 07.9); `internal/task`: TestToday (07.1 a 07.6), TestIsNewIsLate |
+| US-08 | CA-08.1 a CA-08.5 | `cmd/neivi`: TestTriage; `internal/task`: TestSorts (08.1); `internal/store`: TestListTasksFilter (08.2) |
+| US-09 | CA-09.1 a CA-09.9 | `cmd/neivi`: TestLs; `internal/store`: TestListTasksFilter (09.1 a 09.5); `internal/task`: TestSorts (09.1, 09.5, 09.7), TestMatchWords (09.4), TestFilterIsEmpty (09.8); `internal/todotxt`: TestParseFilter |
+| US-10 | CA-10.1 a CA-10.6 | `cmd/neivi`: TestShow, TestDaysLabel (10.1, 10.3), TestCodeName (10.1) |
 
+**Pendente da fatia 2:** CA-10.5 e a parte "herdada" do `ls @` (RN-14) dependem de o projeto ter disciplina (D-06). Ate la, a disciplina eh so o `@` da propria tarefa.
+
+Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por caso. Os criterios que dependem do dia de hoje (prazos com dia da semana) sao conferidos nas funcoes de formatacao e de data, com o "hoje" fixo em ter 10/11/2026, porque os comandos usam o relogio real.
+- **D-34** Nova ordem das fatias: 4 (listagem e resumo) -> 5 (importacao) -> corte das tarefas -> 2 (disciplinas e projetos) -> 3 (habitos) -> corte dos habitos e v0.1. O corte seco (D-24) vira duas etapas: depois da importacao, tarefas so no neivi e o Ganbatte fica ligado so para os habitos; depois da fatia 3, o Ganbatte eh desligado. Os numeros das fatias continuam os mesmos.
+  Porque: preciso comecar a usar o basico (anotar e ver minhas tarefas) o quanto antes, e o uso real melhora os requisitos das fatias seguintes. Custo aceito: por um tempo, tarefas no neivi e habitos no Ganbatte; mudancas no banco depois do corte viram migracoes (sem perder dados).

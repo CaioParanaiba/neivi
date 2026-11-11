@@ -142,7 +142,8 @@ Comandos já definidos:
 |---|---|
 | `neivi add <texto>` | cria uma tarefa |
 | `neivi ls [filtros] [palavras]` | lista as tarefas (ver abaixo) |
-| `neivi today [due]` | resumo diário (ver abaixo) |
+| `neivi today` | resumo diário (ver abaixo) |
+| `neivi triage` | tarefas incompletas (sem prioridade), as mais antigas primeiro |
 | `neivi show <id>` | mostra todos os campos de uma tarefa |
 | `neivi done <id>... [ontem]` | conclui uma ou mais tarefas, hoje ou ontem |
 | `neivi reopen <id>...` | reabre uma ou mais tarefas concluídas |
@@ -171,18 +172,21 @@ palavras usam a mesma sintaxe da entrada e se combinam:
 | Parte | Efeito |
 |---|---|
 | `@BD`, `+neivi`, `pri:A` | só essa disciplina, projeto ou prioridade |
-| `@-`, `+-` | sem disciplina, sem projeto (`@- +-` = tarefas soltas) |
+| `@`, `+` | qualquer disciplina, qualquer projeto |
+| `@-`, `+-`, `pri:-` | sem disciplina, sem projeto, sem prioridade (`pri:-` = `triage`) |
+| `new` | só as novas (criadas hoje ou ontem) |
 | `all` | inclui as concluídas, depois das pendentes |
 | `done` | só as concluídas |
 | `late` | só as atrasadas |
 | `due` | ordena só por prazo |
 | `desc` | mostra a descrição embaixo de cada tarefa, recuada |
-| outra palavra | busca no título |
+| outra palavra | busca no título (todas as palavras, sem maiúsculas nem acentos) |
 
 - Mesmo tipo é "ou" (`@BD @ED` = BD ou ED); tipos diferentes são "e"
   (`@BD pri:A`). Disciplina ou projeto que não existe é erro.
-- `all`, `done`, `late`, `due` e `desc` são reservadas: não servem para buscar
-  no título.
+- `all`, `done`, `late`, `new`, `due` e `desc` são reservadas: não servem para
+  buscar no título. `all` mostra as concluídas no fim, das mais recentes para
+  as mais antigas, com a coluna `X`; `done` mostra só elas, na mesma ordem.
 - Sem `desc`, a tarefa com descrição ganha um `…` depois do título.
 - Ordens (requisitos D-04 e D-28): padrão = prioridade (A–D, sem prioridade por
   último) → prazo (mais perto primeiro, sem prazo por último) → estimativa
@@ -192,9 +196,21 @@ palavras usam a mesma sintaxe da entrada e se combinam:
   usar os mesmos.
 
 **Resumo diário (`today`).** Três blocos de tarefas pendentes, nesta ordem
-(requisitos D-27): atrasadas, urgentes (prazo hoje, qualquer prioridade) e
-importantes (prioridade A sem prazo). Os hábitos do dia entram abaixo. É a
-mesma função de ordenação do `ls`.
+(requisitos RN-16): atrasadas, urgentes (prazo hoje, qualquer prioridade) e
+importantes (prioridade A sem prazo); sem nenhuma A sem prazo, o terceiro vira
+"sem prazo" com o nível mais alto que existir. Cada bloco é uma tabela com o
+próprio cabeçalho, todas com a mesma largura de coluna. No fim, `falta: ~4h`
+(soma das EST) e o contador do dia. Dia vazio: `nada para hoje`, com a dica do
+`triage` se houver incompletas. Os hábitos do dia entram abaixo.
+
+**Listas em tabela** (`today`, `ls`, `triage`): `ID P PRAZO EST TAREFA`, o `X`
+só no `ls all`, prazo como `qua 11/11`. A tabela é montada à mão
+(`cmd/neivi/views.go`) e não com o `tabwriter`, porque o `tabwriter` não mantém
+a largura entre os grupos do `today`.
+
+**Detalhes (`show`).** Todos os campos, um por linha (vazios como `-`), com o
+prazo deduzido (`em 2 dias`, `atrasada ha 3 dias`), `(nova)` na criação, a
+situação (pendente, incompleta, concluída em…) e a descrição inteira no fim.
 
 Os demais comandos seguem o formato da seção 3 e entram aqui quando forem
 definidos, fatia a fatia. O que ainda falta definir:
@@ -209,13 +225,17 @@ definidos, fatia a fatia. O que ainda falta definir:
 
 Sem convivência: o neivi não escreve no `todo.txt`.
 
-1. Até o v0.1 ficar pronto, o Ganbatte continua sendo usado normalmente.
-2. Com o v0.1 pronto: importar uma vez (tarefas e disciplinas), conferir e
-   desligar o `ganbatte.service`. As chaves do Ganbatte que o neivi não usa
-   (`aula:`, `av:`, `top:`, `gh:`, `esf:`, `rec:`, `rep:`) vão para a descrição
-   da tarefa importada.
-3. A automação externa das 5:50 continua só como gatilho do dia, sem depender
-   do conteúdo do `todo.txt`, até a TUI.
+Em duas etapas (requisitos D-34):
+
+1. **Corte das tarefas** (depois da importação): importar uma vez (tarefas e
+   disciplinas), conferir e passar a registrar tarefas **só no neivi**. O
+   Ganbatte continua ligado apenas para os hábitos. As chaves do Ganbatte que
+   o neivi não usa (`aula:`, `av:`, `top:`, `gh:`, `esf:`, `rec:`, `rep:`) vão
+   para a descrição da tarefa importada.
+2. Nesse dia, a automação externa das 5:50 troca o prompt por algo neutro (o
+   `todo.txt` para de ser atualizado) e fica só como gatilho do dia, até a TUI.
+3. **Corte dos hábitos** (depois da fatia de hábitos): desligar o
+   `ganbatte.service`.
 4. Dados que ficam para o v0.2: avaliações e notas (`hunter/avaliacoes.txt`).
    Caçadas, marcos e demais dados do `estado.json` não são migrados.
 
@@ -229,9 +249,11 @@ Sem convivência: o neivi não escreve no `todo.txt`.
 - **Driver:** `modernc.org/sqlite` (Go puro, sem cgo) com `database/sql`.
 - **Esquema:** `001_init.sql` embutido no binário (`embed`), com
   `CREATE TABLE IF NOT EXISTS`, executado sempre que o banco é aberto. Enquanto
-  não houver dados reais, o esquema muda direto no `001`. O controle de versões
+  não houver dados reais, o esquema muda direto no `001`. Depois do corte das
+  tarefas, o `001` não muda mais (o `IF NOT EXISTS` não altera tabela que já
+  existe): toda mudança vira uma migração nova. O controle de versões
   (`PRAGMA user_version`, só aplicar o que falta) entra junto com a primeira
-  migração `002`, depois do corte.
+  migração `002`, na fatia de disciplinas e projetos.
 - **Chaves estrangeiras** ligadas em toda conexão (`_pragma=foreign_keys(1)` no
   caminho do banco).
 
@@ -309,12 +331,17 @@ Feito:
 
 Daqui em diante, por fatias (cada uma: requisitos → código → testes):
 
-1. Tarefas (retroativa).
-2. Disciplinas e projetos (D-06, panorama do projeto).
-3. Hábitos.
-4. Listagem, filtros e resumo diário.
-5. Importação e backup.
-6. Corte com o Ganbatte (seção 6) e uma semana de uso real. Tag `v0.1.0`.
+1. Tarefas (retroativa). Fechada em 11/11/2026.
+2. Listagem, filtros e resumo diário (fatia 4 dos requisitos).
+3. Importação (fatia 5; o backup já está pronto).
+4. **Corte das tarefas** (seção 6): começo a usar o neivi para tarefas.
+5. Disciplinas e projetos (fatia 2: D-06, panorama do projeto), com o
+   controle de versões do esquema e a primeira migração `002`.
+6. Hábitos (fatia 3).
+7. **Corte dos hábitos** (seção 6) e uma semana de uso real. Tag `v0.1.0`.
+
+A ordem foi mudada para usar o básico mais cedo (requisitos D-34); os números
+das fatias nos requisitos continuam os mesmos.
 
 ## 11. Decisões pendentes
 
