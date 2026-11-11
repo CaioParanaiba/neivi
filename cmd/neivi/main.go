@@ -67,6 +67,8 @@ func main() {
 		runShow(db, os.Args[2:])
 	case "habit":
 		runHabit(db, os.Args[2:])
+	case "help":
+		runHelp(os.Args[2:])
 	case "subject":
 		runSubject(db, os.Args[2:])
 	case "project":
@@ -80,8 +82,7 @@ func main() {
 	case "edit":
 		runEdit(db, os.Args[2:])
 	default:
-		fmt.Fprintln(os.Stderr, "Comando", os.Args[1], "eh desconhecido")
-		usage()
+		fmt.Fprintf(os.Stderr, "erro: comando %s desconhecido (veja os comandos no neivi help)\n", os.Args[1])
 		os.Exit(1)
 	}
 }

@@ -1043,3 +1043,47 @@ func TestHabit(t *testing.T) {
 		}
 	})
 }
+
+func TestHelp(t *testing.T) {
+	t.Run("CA-22.1 ajuda de cada comando", func(t *testing.T) {
+		c := newCLI(t)
+		for cmd, want := range map[string]string{
+			"add": "pri:A", "edit": "pri:-", "done": "ontem", "reopen": "reopen 5", "rm": "[s/N]",
+			"today": "atrasadas", "triage": "ls pri:-", "ls": "busca no titulo", "show": "todos os campos",
+			"subject": "sit:ativa|encerrada", "project": "gh:usuario/repo", "habit": "x2",
+		} {
+			out, _, code := c.run("", "help", cmd)
+			if code != 0 || !strings.HasPrefix(out, "uso: neivi "+cmd) || !strings.Contains(out, want) {
+				t.Errorf("neivi help %s:\n%s", cmd, out)
+			}
+		}
+	})
+
+	t.Run("CA-22.2 comando sem ajuda", func(t *testing.T) {
+		c := newCLI(t)
+		_, errOut, code := c.run("", "help", "xyz")
+		if code == 0 || !strings.HasPrefix(errOut, "erro: comando xyz desconhecido (ajuda existe para: add,") {
+			t.Errorf("erro = %q", errOut)
+		}
+	})
+
+	t.Run("CA-22.3 lista de comandos aponta para a ajuda", func(t *testing.T) {
+		c := newCLI(t)
+		out, _, _ := c.run("", "help")
+		if !strings.HasSuffix(out, "detalhes de um comando: neivi help <comando>   (ex.: neivi help add)") {
+			t.Errorf("neivi help:\n%s", out)
+		}
+		_, errOut, _ := c.run("", "xyz")
+		if errOut != "erro: comando xyz desconhecido (veja os comandos no neivi help)" {
+			t.Errorf("comando desconhecido: %q", errOut)
+		}
+	})
+
+	t.Run("CA-22.1 todo comando da lista tem ajuda", func(t *testing.T) {
+		for _, cmd := range []string{"add", "today", "triage", "ls", "show", "edit", "done", "reopen", "rm", "subject", "project", "habit"} {
+			if _, ok := helps[cmd]; !ok {
+				t.Errorf("falta a ajuda de %s", cmd)
+			}
+		}
+	})
+}

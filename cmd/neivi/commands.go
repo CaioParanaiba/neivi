@@ -17,31 +17,23 @@ import (
 
 const help = `uso: neivi <comando> [argumentos]
 
-comandos:
-  add <texto>                adicionar tarefa
-  today                      o que tem para hoje
-  triage                     tarefas incompletas (sem prioridade)
-  ls [filtros] [palavras]    listar tarefas (@BD @ @- +proj pri:A new late all done due desc)
-  show <id>                  ver todos os campos de uma tarefa
-  done <id>... [ontem]       concluir tarefas (hoje ou ontem)
-  reopen <id>...             reabrir tarefas concluidas
-  edit <id> <texto>          mudar so os campos do texto
-  rm <id>...                 remover tarefas (pede confirmacao)
-  subject add <code> [nome]  adicionar disciplina
-  subject ls [all]           listar disciplinas (all: tambem as encerradas)
-  subject edit <code> ...    mudar nome, sit:ativa|encerrada, code:novo
-  subject rm <code>          remover disciplina sem tarefas
-  project add <code> [nome]  adicionar projeto (@BD gh:usuario/repo dir:pasta cont:sim -- descricao)
-  project ls [all]           listar projetos (all: tambem concluidos e cancelados)
-  project show <code>        panorama do projeto
-  project edit <code> ...    mudar campos (sit:pausado, dir:-, code:novo ...)
-  project rm <code>          remover projeto sem tarefas
-  habit add <code> [nome]    adicionar habito (meta:3, sem:3 ou dias:seg,qua,sex)
-  habit do <habito>... [ontem]   registrar (codigo ou id; x2 = quantidade)
-  habit undo <habito>... [ontem] desfazer um registro
-  habit ls [all]             listar habitos (all: tambem os arquivados)
-  habit edit <code> ...      mudar nome, meta, periodicidade, sit:arquivado, code:novo
-  habit rm <code>            remover habito sem registros
+tarefas:
+  add <texto>                 adicionar tarefa
+  today                       o que tem para hoje (tarefas e habitos)
+  triage                      tarefas incompletas (sem prioridade)
+  ls [filtros] [palavras]     listar tarefas
+  show <id>                   ver todos os campos de uma tarefa
+  edit <id> <texto>           mudar so os campos do texto
+  done <id>... [ontem]        concluir tarefas
+  reopen <id>...              reabrir tarefas concluidas
+  rm <id>...                  remover tarefas (pede confirmacao)
+
+cadastros:
+  subject <add|ls|edit|rm>    disciplinas
+  project <add|ls|show|edit|rm>  projetos
+  habit <add|do|undo|ls|edit|rm> habitos
+
+detalhes de um comando: neivi help <comando>   (ex.: neivi help add)
 `
 
 func usage() {
