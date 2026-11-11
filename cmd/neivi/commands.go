@@ -21,7 +21,7 @@ const help = `uso: neivi <comando> [argumentos]
 comandos:
   add <texto>                adicionar tarefa
   ls                         listar tarefas
-  done <id>...               concluir tarefas
+  done <id>... [ontem]       concluir tarefas (hoje ou ontem)
   reopen <id>...             reabrir tarefas concluidas
   edit <id> <texto>          mudar so os campos do texto
   rm <id>...                 remover tarefas (pede confirmacao)
@@ -82,12 +82,27 @@ func runAdd(db *sql.DB, args []string) {
 		ProjectID:   idProject,
 	}
 
+	// procura antes de inserir, para a propria tarefa nao contar (RN-01)
+	dup, err := store.FindDuplicate(db, t.Title, 0)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
 	id, err := store.AddTask(db, t)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Tarefa:", id, "adicionada")
+
+	t.ID = id
+	t.SubjectCode = entry.SubjectCode
+	t.ProjectCode = entry.ProjectCode
+	fmt.Println(formatLine("+", t, time.Now()))
+
+	if dup != 0 {
+		fmt.Fprintf(os.Stderr, "aviso: ja existe a tarefa %d com esse titulo\n", dup)
+	}
 }
 
 // formatEst mostra a estimativa como 30m, 1h ou 1h15; vazia quando não tem
@@ -103,6 +118,85 @@ func formatEst(min int64) string {
 		return fmt.Sprintf("%dh", h)
 	}
 	return fmt.Sprintf("%dh%02d", h, m)
+}
+
+// dias da semana na ordem do time.Weekday (domingo = 0)
+var weekdays = [...]string{"dom", "seg", "ter", "qua", "qui", "sex", "sab"}
+
+// formatDue mostra o prazo como "sex 13/11"; com o ano so quando nao eh o atual
+func formatDue(due string, today time.Time) string {
+	d, err := time.Parse("2006-01-02", due)
+	if err != nil {
+		return due
+	}
+
+	if d.Year() != today.Year() {
+		return weekdays[d.Weekday()] + " " + d.Format("02/01/06")
+	}
+	return weekdays[d.Weekday()] + " " + d.Format("02/01")
+}
+
+// linePart monta "id · pri · prazo · est · titulo @disc +proj …", sem os campos vazios
+func linePart(t task.Task, today time.Time) string {
+	parts := []string{strconv.FormatInt(t.ID, 10)}
+
+	if t.Priority != "" {
+		parts = append(parts, t.Priority)
+	}
+	if t.Due != "" {
+		parts = append(parts, formatDue(t.Due, today))
+	}
+	if t.EstimateMin > 0 {
+		parts = append(parts, formatEst(t.EstimateMin))
+	}
+
+	title := t.Title
+	if t.SubjectCode != "" {
+		title += " @" + t.SubjectCode
+	}
+	if t.ProjectCode != "" {
+		title += " +" + t.ProjectCode
+	}
+	if t.Description != "" {
+		title += " …"
+	}
+	parts = append(parts, title)
+
+	return strings.Join(parts, " · ")
+}
+
+// formatLine eh a confirmacao curta (RNF-05): + criar, ~ editar, ✓ concluir, ↺ reabrir
+func formatLine(symbol string, t task.Task, today time.Time) string {
+	return symbol + " " + linePart(t, today)
+}
+
+// parseIDs le os ids de done, reopen e rm antes de agir em qualquer um (RN-12).
+// Com allowOntem, aceita a palavra "ontem". Qualquer outra palavra recusa tudo.
+func parseIDs(args []string, allowOntem bool, example string) ([]int64, bool, error) {
+	var ids []int64
+	var ontem bool
+
+	for _, v := range args {
+		if allowOntem && v == "ontem" {
+			ontem = true
+			continue
+		}
+
+		id, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			if allowOntem {
+				return nil, false, fmt.Errorf("%q nao eh um id nem \"ontem\" (exemplo: %s)", v, example)
+			}
+			return nil, false, fmt.Errorf("%q nao eh um id (exemplo: %s)", v, example)
+		}
+		ids = append(ids, id)
+	}
+
+	if len(ids) == 0 {
+		return nil, false, fmt.Errorf("falta o id da tarefa (exemplo: %s)", example)
+	}
+
+	return ids, ontem, nil
 }
 
 func runLs(db *sql.DB, args []string) {
@@ -196,20 +290,20 @@ func applyEdit(db *sql.DB, t *task.Task, e todotxt.Entry) error {
 
 func runEdit(db *sql.DB, args []string) {
 
-	if len(args) < 2 {
-		usage()
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "erro: falta o id da tarefa (exemplo: neivi edit 1 pri:B)")
 		os.Exit(1)
 	}
 
 	id, err := strconv.ParseInt(args[0], 10, 64)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", args[0], err)
+		fmt.Fprintf(os.Stderr, "erro: id %s invalido (use o numero que aparece no ls)\n", args[0])
 		os.Exit(1)
 	}
 
 	t, err := store.GetTask(db, id)
 	if errors.Is(err, sql.ErrNoRows) {
-		fmt.Fprintf(os.Stderr, "erro: tarefa %d nao existe\n", id)
+		fmt.Fprintf(os.Stderr, "erro: tarefa %d nao existe (veja os ids no neivi ls)\n", id)
 		os.Exit(1)
 	}
 	if err != nil {
@@ -218,6 +312,11 @@ func runEdit(db *sql.DB, args []string) {
 	}
 
 	args = args[1:]
+
+	if len(args) == 0 {
+		fmt.Fprintf(os.Stderr, "erro: nada para mudar na tarefa %d (exemplo: neivi edit %d pri:B due:sex)\n", id, id)
+		os.Exit(1)
+	}
 
 	entry, err := todotxt.ParseEdit(args, time.Now())
 	if err != nil {
@@ -231,33 +330,64 @@ func runEdit(db *sql.DB, args []string) {
 		os.Exit(1)
 	}
 
+	// titulo novo: procura duplicada sem contar a propria tarefa (RN-01)
+	var dup int64
+	if entry.Title != "" {
+		dup, err = store.FindDuplicate(db, t.Title, id)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+	}
+
 	err = store.UpdateTask(db, t)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stdout, "tarefa %d editada\n", id)
-}
-
-func runDoneTasks(db *sql.DB, args []string) {
-
-	if len(args) == 0 {
-		usage()
+	// busca de novo para os codigos de @ e + virem atualizados
+	t, err = store.GetTask(db, id)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
 
-	var idChanged, idSkipped []string
-	for _, sId := range args {
-		id, err := strconv.ParseInt(sId, 10, 64)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", sId, err)
-			continue
-		}
+	fmt.Println(formatLine("~", t, time.Now()))
 
+	if t.DoneAt != "" {
+		fmt.Fprintf(os.Stderr, "aviso: a tarefa %d esta concluida\n", id)
+	}
+	if dup != 0 {
+		fmt.Fprintf(os.Stderr, "aviso: ja existe a tarefa %d com esse titulo\n", dup)
+	}
+}
+
+func runDoneTasks(db *sql.DB, args []string) {
+	ids, ontem, err := parseIDs(args, true, "neivi done 3 5 ontem")
+	if err != nil {
+		if len(args) == 0 {
+			err = fmt.Errorf("falta o id da tarefa (exemplo: neivi done 3 5)")
+		}
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	daysAgo := 0
+	suffix := ""
+	label := "hoje"
+	if ontem {
+		daysAgo = 1
+		suffix = " (ontem)"
+		label = "ontem"
+	}
+
+	today := time.Now()
+	var changed int
+	for _, id := range ids {
 		v, err := store.GetTask(db, id)
 		if errors.Is(err, sql.ErrNoRows) {
-			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe\n", id)
+			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe (veja os ids no neivi ls)\n", id)
 			continue
 		}
 		if err != nil {
@@ -265,46 +395,43 @@ func runDoneTasks(db *sql.DB, args []string) {
 			os.Exit(1)
 		}
 
+		// concluir de novo nao muda a data (RN-11)
 		if v.DoneAt != "" {
-			idSkipped = append(idSkipped, sId)
+			fmt.Fprintf(os.Stderr, "aviso: a tarefa %d ja estava concluida\n", id)
 			continue
 		}
 
-		err = store.DoneTask(db, id)
+		err = store.DoneTask(db, id, daysAgo)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "erro:", err)
 			os.Exit(1)
 		}
-		idChanged = append(idChanged, sId)
+		fmt.Println(formatLine("✓", v, today) + suffix)
+		changed++
 	}
 
-	if len(idChanged) > 0 {
-		s := strings.Join(idChanged, " ")
-		fmt.Fprintf(os.Stdout, "tarefa(s): %s feitas\n", s)
-	}
-	if len(idSkipped) > 0 {
-		s := strings.Join(idSkipped, " ")
-		fmt.Fprintf(os.Stdout, "tarefa(s): %s ja feitas\n", s)
+	if changed > 0 {
+		n, err := store.CountDone(db, daysAgo)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "erro:", err)
+			os.Exit(1)
+		}
+		fmt.Printf("%s: %d concluidas\n", label, n)
 	}
 }
 
 func runReopenTasks(db *sql.DB, args []string) {
-	if len(args) == 0 {
-		usage()
+	ids, _, err := parseIDs(args, false, "neivi reopen 5")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
 
-	var idChanged, idSkipped []string
-	for _, sId := range args {
-		id, err := strconv.ParseInt(sId, 10, 64)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", sId, err)
-			continue
-		}
-
+	today := time.Now()
+	for _, id := range ids {
 		v, err := store.GetTask(db, id)
 		if errors.Is(err, sql.ErrNoRows) {
-			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe\n", id)
+			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe (veja os ids no neivi ls)\n", id)
 			continue
 		}
 		if err != nil {
@@ -313,7 +440,7 @@ func runReopenTasks(db *sql.DB, args []string) {
 		}
 
 		if v.DoneAt == "" {
-			idSkipped = append(idSkipped, sId)
+			fmt.Fprintf(os.Stderr, "aviso: a tarefa %d nao estava concluida\n", id)
 			continue
 		}
 
@@ -322,22 +449,14 @@ func runReopenTasks(db *sql.DB, args []string) {
 			fmt.Fprintln(os.Stderr, "erro:", err)
 			os.Exit(1)
 		}
-		idChanged = append(idChanged, sId)
-	}
-
-	if len(idChanged) > 0 {
-		s := strings.Join(idChanged, " ")
-		fmt.Fprintf(os.Stdout, "tarefa(s): %s reabertas\n", s)
-	}
-	if len(idSkipped) > 0 {
-		s := strings.Join(idSkipped, " ")
-		fmt.Fprintf(os.Stdout, "tarefa(s): %s nao estavam concluidas\n", s)
+		fmt.Println(formatLine("↺", v, today))
 	}
 }
 
 func runRmTasks(db *sql.DB, args []string) {
-	if len(args) == 0 {
-		usage()
+	ids, _, err := parseIDs(args, false, "neivi rm 3")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
 
@@ -345,16 +464,11 @@ func runRmTasks(db *sql.DB, args []string) {
 	// um reader só para o laço
 	reader := bufio.NewReader(os.Stdin)
 
-	for _, sId := range args {
-		id, err := strconv.ParseInt(sId, 10, 64)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "erro: id %s eh invalido: %s\n", sId, err)
-			continue
-		}
-
+	today := time.Now()
+	for _, id := range ids {
 		v, err := store.GetTask(db, id)
 		if errors.Is(err, sql.ErrNoRows) {
-			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe\n", id)
+			fmt.Fprintf(os.Stderr, "aviso: tarefa %d nao existe (veja os ids no neivi ls)\n", id)
 			continue
 		}
 		if err != nil {
@@ -362,13 +476,20 @@ func runRmTasks(db *sql.DB, args []string) {
 			os.Exit(1)
 		}
 
-		fmt.Fprintf(os.Stdout, "remover a tarefa %d \"%s\"? [s/N] ", id, v.Title)
+		// concluida sai do historico: avisa na pergunta (RN-13)
+		warn := ""
+		if v.DoneAt != "" {
+			warn = " (concluida, sai do historico)"
+		}
+
+		fmt.Fprintf(os.Stdout, "remover %s%s? [s/N] ", linePart(v, today), warn)
 		line, _ := reader.ReadString('\n')
 		ans := strings.TrimSpace(line)
 
 		ans = strings.ToUpper(ans)
 
 		if ans != "S" {
+			fmt.Fprintf(os.Stdout, "%d mantida\n", id)
 			continue
 		}
 
@@ -377,7 +498,7 @@ func runRmTasks(db *sql.DB, args []string) {
 			fmt.Fprintln(os.Stderr, "erro:", err)
 			continue
 		}
-		fmt.Fprintf(os.Stdout, "tarefa %d removida\n", id)
+		fmt.Fprintf(os.Stdout, "✗ %d removida\n", id)
 	}
 }
 

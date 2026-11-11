@@ -147,7 +147,7 @@ func SubjectIDByCode(db *sql.DB, code string) (int64, error) {
 	err := db.QueryRow("SELECT id FROM subjects WHERE code = ?", code).Scan(&id)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, fmt.Errorf("disciplina %s nao cadastrada", code)
+		return 0, fmt.Errorf("disciplina %s nao cadastrada (cadastrar: neivi subject add %s)", code, code)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("erro ao consultar disciplinas: %w", err)
@@ -160,7 +160,7 @@ func ProjectIDByCode(db *sql.DB, code string) (int64, error) {
 	err := db.QueryRow("SELECT id FROM projects WHERE code = ?", code).Scan(&id)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, fmt.Errorf("projeto %s nao cadastrado", code)
+		return 0, fmt.Errorf("projeto %s nao cadastrado (cadastrar: neivi project add %s)", code, code)
 	}
 	if err != nil {
 		return 0, fmt.Errorf("erro ao consultar projetos: %w", err)
@@ -279,8 +279,10 @@ func GetTask(db *sql.DB, id int64) (task.Task, error) {
 
 }
 
-func DoneTask(db *sql.DB, id int64) error {
-	_, err := db.Exec("UPDATE tasks SET done_at = datetime('now', 'localtime') WHERE id = ?", id)
+// DoneTask conclui a tarefa com a data de hoje (daysAgo = 0) ou de ontem (daysAgo = 1)
+func DoneTask(db *sql.DB, id int64, daysAgo int) error {
+	mod := fmt.Sprintf("-%d days", daysAgo)
+	_, err := db.Exec("UPDATE tasks SET done_at = datetime('now', 'localtime', ?) WHERE id = ?", mod, id)
 	if err != nil {
 		return fmt.Errorf("concluir tarefa %d: %w", id, err)
 	}
@@ -304,4 +306,50 @@ func RmTask(db *sql.DB, id int64) error {
 	}
 
 	return nil
+}
+
+// CountDone conta as tarefas concluidas hoje (daysAgo = 0) ou ontem (daysAgo = 1)
+func CountDone(db *sql.DB, daysAgo int) (int, error) {
+	mod := fmt.Sprintf("-%d days", daysAgo)
+
+	var n int
+	err := db.QueryRow("SELECT COUNT(*) FROM tasks WHERE date(done_at) = date('now', 'localtime', ?)", mod).Scan(&n)
+	if err != nil {
+		return 0, fmt.Errorf("contar concluidas: %w", err)
+	}
+
+	return n, nil
+}
+
+// FindDuplicate devolve o id de uma tarefa pendente com o mesmo titulo (RN-01),
+// ignorando a tarefa exceptID (0 no add). Devolve 0 se nao tiver.
+func FindDuplicate(db *sql.DB, title string, exceptID int64) (int64, error) {
+	rows, err := db.Query("SELECT id, title FROM tasks WHERE done_at IS NULL AND id != ? ORDER BY id", exceptID)
+	if err != nil {
+		return 0, fmt.Errorf("procurar duplicada: %w", err)
+	}
+
+	defer rows.Close()
+
+	want := task.NormalizeTitle(title)
+	for rows.Next() {
+		var id int64
+		var t string
+
+		err := rows.Scan(&id, &t)
+		if err != nil {
+			return 0, fmt.Errorf("ler tarefa: %w", err)
+		}
+
+		if task.NormalizeTitle(t) == want {
+			return id, nil
+		}
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return 0, fmt.Errorf("percorrer tarefas: %w", err)
+	}
+
+	return 0, nil
 }

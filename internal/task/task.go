@@ -1,6 +1,8 @@
 // Package task define os tipos do domínio de tarefas
 package task
 
+import "strings"
+
 type Task struct {
 	ID          int64
 	Title       string
@@ -14,4 +16,10 @@ type Task struct {
 	CreatedAt   string
 	SubjectCode string
 	ProjectCode string
+}
+
+// NormalizeTitle deixa o titulo pronto para comparar duplicadas (RN-01):
+// minusculo e sem espacos extras
+func NormalizeTitle(s string) string {
+	return strings.Join(strings.Fields(strings.ToLower(s)), " ")
 }
