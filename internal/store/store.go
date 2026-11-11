@@ -6,6 +6,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"strings"
 
 	_ "modernc.org/sqlite"
 
@@ -29,7 +30,8 @@ const selectTasks = `SELECT tasks.id, tasks.title, COALESCE(tasks.description, '
         COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
         COALESCE(tasks.project_id, 0), COALESCE(tasks.done_at, ''),
         tasks.created_at, COALESCE(subjects.code, ''),
-        COALESCE(projects.code, '')
+        COALESCE(projects.code, ''), COALESCE(subjects.name, ''),
+        COALESCE(projects.name, '')
         FROM tasks
         LEFT JOIN subjects ON subjects.id = tasks.subject_id
         LEFT JOIN projects ON projects.id = tasks.project_id`
@@ -40,7 +42,8 @@ func scanTask(s scanner) (task.Task, error) {
 		&v.Priority, &v.Due, &v.EstimateMin,
 		&v.SubjectID, &v.ProjectID,
 		&v.DoneAt, &v.CreatedAt,
-		&v.SubjectCode, &v.ProjectCode)
+		&v.SubjectCode, &v.ProjectCode,
+		&v.SubjectName, &v.ProjectName)
 	return v, err
 }
 
@@ -352,4 +355,112 @@ func FindDuplicate(db *sql.DB, title string, exceptID int64) (int64, error) {
 	}
 
 	return 0, nil
+}
+
+// orGroup junta as condicoes de um mesmo tipo de filtro com OR, entre
+// parenteses, para depois entrar no WHERE com AND (RN-18)
+func orGroup(parts []string) string {
+	return "(" + strings.Join(parts, " OR ") + ")"
+}
+
+// ListTasksFilter devolve as tarefas que passam nos filtros que o banco sabe
+// responder. A busca por palavras (sem acento) e a ordem ficam em Go, no task.
+func ListTasksFilter(db *sql.DB, f task.Filter) ([]task.Task, error) {
+	var where []string // cada item eh uma condicao; todas juntas com AND
+	var args []any     // os valores dos ?, na mesma ordem em que aparecem
+
+	// situacao: so pendentes, so concluidas ou as duas (all)
+	if f.Done {
+		where = append(where, "tasks.done_at IS NOT NULL")
+	} else if !f.All {
+		where = append(where, "tasks.done_at IS NULL")
+	}
+
+	// disciplina: @BD, @ e @- do mesmo tipo viram um grupo com OR
+	var subj []string
+	for _, code := range f.Subjects {
+		subj = append(subj, "subjects.code = ?")
+		args = append(args, code)
+	}
+	if f.AnySubject {
+		subj = append(subj, "tasks.subject_id IS NOT NULL")
+	}
+	if f.NoSubject {
+		subj = append(subj, "tasks.subject_id IS NULL")
+	}
+	if len(subj) > 0 {
+		where = append(where, orGroup(subj))
+	}
+
+	// projeto: o mesmo jeito da disciplina
+	var proj []string
+	for _, code := range f.Projects {
+		proj = append(proj, "projects.code = ?")
+		args = append(args, code)
+	}
+	if f.AnyProject {
+		proj = append(proj, "tasks.project_id IS NOT NULL")
+	}
+	if f.NoProject {
+		proj = append(proj, "tasks.project_id IS NULL")
+	}
+	if len(proj) > 0 {
+		where = append(where, orGroup(proj))
+	}
+
+	// prioridade: "-" eh sem prioridade (incompleta)
+	var pri []string
+	for _, p := range f.Priorities {
+		if p == "-" {
+			pri = append(pri, "tasks.priority IS NULL")
+			continue
+		}
+		pri = append(pri, "tasks.priority = ?")
+		args = append(args, p)
+	}
+	if len(pri) > 0 {
+		where = append(where, orGroup(pri))
+	}
+
+	if f.New {
+		where = append(where, "date(tasks.created_at) >= date('now', 'localtime', '-1 day')")
+	}
+	if f.Late {
+		where = append(where, "tasks.due IS NOT NULL AND tasks.due < date('now', 'localtime')")
+	}
+
+	query := selectTasks
+	if len(where) > 0 {
+		query += " WHERE " + strings.Join(where, " AND ")
+	}
+	query += " ORDER BY tasks.id" // ordem estavel; a ordem final eh feita em Go (RN-17)
+
+	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("listar tarefas: %w", err)
+	}
+
+	defer rows.Close()
+
+	var lista []task.Task
+	for rows.Next() {
+		v, err := scanTask(rows)
+		if err != nil {
+			return nil, fmt.Errorf("ler tarefa: %w", err)
+		}
+
+		// busca no titulo: em Go, porque o SQLite nao sabe ignorar acento
+		if !task.MatchWords(v.Title, f.Words) {
+			continue
+		}
+
+		lista = append(lista, v)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, fmt.Errorf("percorrer tarefas: %w", err)
+	}
+
+	return lista, nil
 }

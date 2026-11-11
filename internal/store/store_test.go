@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -176,5 +177,74 @@ func TestSubjectIDByCode(t *testing.T) {
 	want := "disciplina XX nao cadastrada (cadastrar: neivi subject add XX)"
 	if err == nil || err.Error() != want {
 		t.Errorf("CA-02.6 erro = %v, queria %q", err, want)
+	}
+}
+
+func TestListTasksFilter(t *testing.T) {
+	db := openTest(t)
+
+	bd, _ := AddSubject(db, "BD", "BD")
+	ed, _ := AddSubject(db, "ED", "ED")
+	neivi, _ := AddProject(db, "neivi", "neivi")
+
+	add := func(tk task.Task) int64 {
+		t.Helper()
+		id, err := AddTask(db, tk)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+
+	// as tarefas do CA-09.1 (os ids sao outros, mas o papel eh o mesmo)
+	t3 := add(task.Task{Title: "entregar parte do feedback360", Priority: "A", SubjectID: bd})
+	t2 := add(task.Task{Title: "revisar normalizacao", Priority: "A", SubjectID: bd})
+	t11 := add(task.Task{Title: "parser", Priority: "B", ProjectID: neivi})
+	t9 := add(task.Task{Title: "estudar sorting", Priority: "B", SubjectID: ed})
+	t4 := add(task.Task{Title: "comprar cabo HDMI"})
+	t1 := add(task.Task{Title: "ligar"})
+	if err := DoneTask(db, t1, 0); err != nil {
+		t.Fatal(err)
+	}
+	// a 9 foi criada ha uma semana (nao eh nova)
+	if _, err := db.Exec("UPDATE tasks SET created_at = datetime('now', 'localtime', '-7 days') WHERE id = ?", t9); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name string
+		f    task.Filter
+		want []int64
+	}{
+		{"CA-09.1 so pendentes", task.Filter{}, []int64{t3, t2, t11, t9, t4}},
+		{"CA-09.2 @BD", task.Filter{Subjects: []string{"BD"}}, []int64{t3, t2}},
+		{"CA-09.2 @", task.Filter{AnySubject: true}, []int64{t3, t2, t9}},
+		{"CA-09.2 @-", task.Filter{NoSubject: true}, []int64{t11, t4}},
+		{"CA-09.2 +neivi", task.Filter{Projects: []string{"neivi"}}, []int64{t11}},
+		{"CA-09.2 +-", task.Filter{NoProject: true}, []int64{t3, t2, t9, t4}},
+		{"CA-09.2 pri:A", task.Filter{Priorities: []string{"A"}}, []int64{t3, t2}},
+		{"CA-09.2 pri:- (triage)", task.Filter{Priorities: []string{"-"}}, []int64{t4}},
+		{"CA-09.2 new", task.Filter{New: true}, []int64{t3, t2, t11, t4}},
+		{"CA-09.3 @BD @ED eh ou", task.Filter{Subjects: []string{"BD", "ED"}}, []int64{t3, t2, t9}},
+		{"CA-09.3 @BD pri:B eh e", task.Filter{Subjects: []string{"BD"}, Priorities: []string{"B"}}, nil},
+		{"CA-09.4 busca sem acento", task.Filter{Words: []string{"Normalização"}}, []int64{t2}},
+		{"CA-09.5 all inclui concluidas", task.Filter{All: true}, []int64{t3, t2, t11, t9, t4, t1}},
+		{"CA-09.5 done so concluidas", task.Filter{Done: true}, []int64{t1}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			lista, err := ListTasksFilter(db, tc.f)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got []int64
+			for _, v := range lista {
+				got = append(got, v.ID)
+			}
+			if fmt.Sprint(got) != fmt.Sprint(tc.want) {
+				t.Errorf("ids = %v, queria %v", got, tc.want)
+			}
+		})
 	}
 }
