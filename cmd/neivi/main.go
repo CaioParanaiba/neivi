@@ -3,14 +3,45 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/CaioParanaiba/neivi/internal/store"
 )
 
-const dbPath = "/tmp/neivi-teste.db"
+// dbPath devolve o caminho do banco: NEIVI_DB, se definida (testes), ou
+// $XDG_DATA_HOME/neivi/neivi.db (padrao ~/.local/share/neivi/neivi.db).
+// Cria a pasta se ela ainda nao existir.
+func dbPath() (string, error) {
+	if p := os.Getenv("NEIVI_DB"); p != "" {
+		return p, nil
+	}
+
+	dir := os.Getenv("XDG_DATA_HOME")
+	if dir == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("achar a pasta pessoal: %w", err)
+		}
+		dir = filepath.Join(home, ".local", "share")
+	}
+	dir = filepath.Join(dir, "neivi")
+
+	err := os.MkdirAll(dir, 0o755)
+	if err != nil {
+		return "", fmt.Errorf("criar %s: %w", dir, err)
+	}
+
+	return filepath.Join(dir, "neivi.db"), nil
+}
 
 func main() {
-	db, err := store.Open(dbPath)
+	path, err := dbPath()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "erro:", err)
+		os.Exit(1)
+	}
+
+	db, err := store.Open(path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
