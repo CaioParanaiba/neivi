@@ -709,3 +709,201 @@ func TestShow(t *testing.T) {
 		})
 	}
 }
+
+// runCases roda uma tabela de casos, cada um num banco novo com a mesma preparacao
+type cliCase struct {
+	name    string
+	stdin   string
+	in      []string
+	wantOut string
+	wantErr string
+}
+
+func runCases(t *testing.T, prep [][]string, tests []cliCase) {
+	t.Helper()
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCLI(t)
+			for _, p := range prep {
+				c.must(p...)
+			}
+			out, errOut, _ := c.run(tc.stdin, tc.in...)
+			check(t, out, errOut, tc.wantOut, tc.wantErr)
+		})
+	}
+}
+
+func TestProject(t *testing.T) {
+	prep := [][]string{
+		{"subject", "add", "BD", "Projeto", "de", "Banco", "de", "Dados"},
+		{"subject", "add", "ED"},
+		{"subject", "edit", "ED", "sit:encerrada"},
+	}
+
+	runCases(t, prep, []cliCase{
+		{name: "CA-11.1 todos os campos", in: []string{"project", "add", "neivi", "Meu", "sucessor", "gh:CaioParanaiba/neivi", "dir:" + os.TempDir(), "--", "em", "Go"},
+			wantOut: "+ 1 · neivi · Meu sucessor · ativo"},
+		{name: "CA-11.2 so o codigo", in: []string{"project", "add", "maratona"}, wantOut: "+ 1 · maratona · ativo"},
+		{name: "CA-11.5 sem codigo", in: []string{"project", "add"}, wantErr: "erro: falta o codigo do projeto (exemplo: neivi project add neivi)"},
+		{name: "CA-11.5 disciplina nao cadastrada", in: []string{"project", "add", "x", "@XX"}, wantErr: "erro: disciplina XX nao cadastrada (cadastrar: neivi subject add XX)"},
+		{name: "CA-11.5 github invalido", in: []string{"project", "add", "x", "gh:neivi"}, wantErr: "erro: github neivi invalido (use usuario/repo ou a URL)"},
+		{name: "CA-11.6 disciplina encerrada avisa", in: []string{"project", "add", "y", "@ED"},
+			wantOut: "+ 1 · y · ativo", wantErr: "aviso: a disciplina ED esta encerrada (reativar: neivi subject edit ED sit:ativa)"},
+		{name: "CA-11.7 pasta que nao existe avisa", in: []string{"project", "add", "z", "dir:/nao/existe"},
+			wantOut: "+ 1 · z · ativo", wantErr: "aviso: a pasta /nao/existe nao existe"},
+		{name: "CA-12.4 sem projetos", in: []string{"project", "ls"}, wantOut: "nenhum projeto (cadastrar: neivi project add codigo)"},
+		{name: "CA-13.3 projeto nao cadastrado", in: []string{"project", "show", "xx"}, wantErr: "erro: projeto xx nao cadastrado (cadastrar: neivi project add xx)"},
+		{name: "CA-13.3 sem codigo", in: []string{"project", "show"}, wantErr: "erro: falta o codigo do projeto (exemplo: neivi project show neivi)"},
+	})
+
+	full := append(prep, [][]string{
+		{"project", "add", "neivi", "Meu", "sucessor", "gh:CaioParanaiba/neivi", "--", "em", "Go"}, // 1
+		{"project", "add", "maratona", "cont:sim"},                                                 // 2
+		{"project", "add", "feedback360", "Trabalho", "de", "BD", "@BD"},                           // 3
+		{"project", "add", "ganbatte", "sit:pausado"},                                              // 4
+		{"project", "add", "velho", "sit:cancelado"},                                               // 5
+		{"add", "parser", "+neivi", "pri:B"},                                                       // 1
+		{"add", "fatia", "2", "+neivi", "pri:A"},                                                   // 2
+		{"add", "treino", "+maratona"},                                                             // 3
+		{"add", "estudar", "joins", "+feedback360"},                                                // 4
+		{"done", "1", "3"},
+	}...)
+
+	runCases(t, full, []cliCase{
+		{name: "CA-12.1 lista: ativos com atividade primeiro, pausados no fim", in: []string{"project", "ls"},
+			wantOut: expectGrid(
+				[]string{"ID", "PROJETO", "SITUACAO", "DISC", "PROGRESSO", "PENDENTES", "ULTIMA"},
+				[]string{"1", "neivi", "ativo", "-", "50%", "1", dia(0) + " (hoje)"},
+				[]string{"2", "maratona", "ativo", "-", "continuo", "0", dia(0) + " (hoje)"},
+				[]string{"3", "feedback360", "ativo", "BD", "0%", "1", "-"},
+				[]string{"4", "ganbatte", "pausado", "-", "-", "0", "-"},
+			)},
+		{name: "CA-13.1 panorama", in: []string{"project", "show", "neivi"},
+			wantOut: "projeto 1 · neivi · Meu sucessor\n" +
+				"  situacao:    ativo\n" +
+				"  disciplina:  -  (pessoal)\n" +
+				"  github:      https://github.com/CaioParanaiba/neivi\n" +
+				"  pasta:       -\n" +
+				"  criado:      " + dia(0) + "\n" +
+				"  progresso:   50% · 1 pendentes\n" +
+				"  ultima:      " + dia(0) + " · 1 · parser  (hoje)\n" +
+				"\n" +
+				"  em Go\n" +
+				"\n" +
+				"pendentes (1)\n" +
+				expectTable([]string{"2", "A", "", "", "fatia 2 +neivi"})},
+		{name: "CA-14.1 mudar a situacao", in: []string{"project", "edit", "ganbatte", "sit:ativo"}, wantOut: "~ 4 · ganbatte · ativo"},
+		{name: "CA-14.2 nome e codigo", in: []string{"project", "edit", "ganbatte", "code:gb", "Ganbatte", "antigo"}, wantOut: "~ 4 · gb · Ganbatte antigo · pausado"},
+		{name: "CA-14.3 nada para mudar", in: []string{"project", "edit", "neivi"},
+			wantErr: "erro: nada para mudar no projeto neivi (exemplo: neivi project edit neivi sit:pausado)"},
+		{name: "CA-14.3 codigo que ja existe", in: []string{"project", "edit", "neivi", "code:maratona"}, wantErr: "erro: ja existe um projeto maratona"},
+		{name: "CA-14.4 disciplina encerrada avisa", in: []string{"project", "edit", "neivi", "@ED"},
+			wantOut: "~ 1 · neivi · Meu sucessor · ativo", wantErr: "aviso: a disciplina ED esta encerrada (reativar: neivi subject edit ED sit:ativa)"},
+		{name: "CA-16.1 remover sem tarefas", stdin: "s\n", in: []string{"project", "rm", "ganbatte"},
+			wantOut: "remover o projeto ganbatte (sem tarefas)? [s/N] ✗ ganbatte removido"},
+		{name: "CA-16.2 projeto com tarefas recusa", in: []string{"project", "rm", "neivi"},
+			wantErr: "erro: o projeto neivi tem 2 tarefas (mude as tarefas para outro com neivi edit, ou tire da lista: neivi project edit neivi sit:cancelado)"},
+		{name: "CA-02.7 tarefa em projeto pausado avisa", in: []string{"add", "bug", "+ganbatte"},
+			wantOut: "+ 5 · bug +ganbatte", wantErr: "aviso: o projeto ganbatte esta pausado (reativar: neivi project edit ganbatte sit:ativo)"},
+		{name: "CA-02.7 tarefa em disciplina encerrada avisa", in: []string{"add", "rever", "@ED"},
+			wantOut: "+ 5 · rever @ED", wantErr: "aviso: a disciplina ED esta encerrada (reativar: neivi subject edit ED sit:ativa)"},
+		{name: "CA-03.8 edit para projeto pausado avisa", in: []string{"edit", "2", "+ganbatte"},
+			wantOut: "~ 2 · A · fatia 2 +ganbatte", wantErr: "aviso: o projeto ganbatte esta pausado (reativar: neivi project edit ganbatte sit:ativo)"},
+		{name: "CA-03.8 done nao avisa", in: []string{"done", "4"},
+			wantOut: "✓ 4 · estudar joins @BD +feedback360\nhoje: 3 concluidas"},
+	})
+
+	t.Run("CA-12.3 all mostra os cancelados", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range full {
+			c.must(p...)
+		}
+		out, _, _ := c.run("", "project", "ls", "all")
+		if !strings.Contains(out, "velho") {
+			t.Errorf("queria o cancelado no all:\n%s", out)
+		}
+	})
+
+	t.Run("CA-10.5 disciplina herdada do projeto", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range full {
+			c.must(p...)
+		}
+		out, _, _ := c.run("", "show", "4")
+		if !strings.Contains(out, "disciplina:  BD (do projeto)") {
+			t.Errorf("queria a disciplina herdada:\n%s", out)
+		}
+		out, _, _ = c.run("", "ls", "@BD")
+		if !strings.Contains(out, "estudar joins @BD +feedback360") {
+			t.Errorf("queria a herdada no ls @BD:\n%s", out)
+		}
+	})
+}
+
+func TestSubject(t *testing.T) {
+	prep := [][]string{
+		{"subject", "add", "BD", "Projeto", "de", "Banco", "de", "Dados"},
+		{"subject", "add", "ED"},
+		{"add", "lista", "@ED"},
+		{"project", "add", "feedback360", "@BD"},
+		{"add", "joins", "+feedback360"},
+	}
+
+	runCases(t, prep, []cliCase{
+		{name: "CA-15.1 cadastrar", in: []string{"subject", "add", "POO"}, wantOut: "+ 3 · POO · ativa"},
+		{name: "CA-15.2 so as ativas, pendentes pela efetiva", in: []string{"subject", "ls"},
+			wantOut: expectGrid([]string{"ID", "DISC", "NOME", "PENDENTES"},
+				[]string{"1", "BD", "Projeto de Banco de Dados", "1"},
+				[]string{"2", "ED", "ED", "1"})},
+		{name: "CA-15.3 encerrar", in: []string{"subject", "edit", "BD", "sit:encerrada"}, wantOut: "~ 1 · BD · Projeto de Banco de Dados · encerrada"},
+		{name: "CA-15.4 codigo repetido", in: []string{"subject", "add", "BD"}, wantErr: "erro: ja existe uma disciplina BD (para mudar: neivi subject edit BD)"},
+		{name: "CA-15.4 situacao invalida", in: []string{"subject", "edit", "BD", "sit:fechada"}, wantErr: "erro: situacao fechada invalida (use ativa ou encerrada)"},
+		{name: "CA-15.4 nada para mudar", in: []string{"subject", "edit", "BD"},
+			wantErr: "erro: nada para mudar na disciplina BD (exemplo: neivi subject edit BD sit:encerrada)"},
+		{name: "CA-16.2 disciplina com tarefas recusa", in: []string{"subject", "rm", "ED"},
+			wantErr: "erro: a disciplina ED tem 1 tarefas (mude as tarefas para outra com neivi edit, ou tire da lista: neivi subject edit ED sit:encerrada)"},
+		{name: "CA-16.3 disciplina com projeto recusa", in: []string{"subject", "rm", "BD"},
+			wantErr: "erro: a disciplina BD tem 1 projeto (feedback360)"},
+	})
+
+	t.Run("CA-15.2 all mostra as encerradas, depois", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		c.must("subject", "edit", "BD", "sit:encerrada")
+		out, _, _ := c.run("", "subject", "ls", "all")
+		lines := strings.Split(out, "\n")
+		if len(lines) != 3 || !strings.HasPrefix(lines[1], "2   ED") || !strings.Contains(lines[2], "encerrada") {
+			t.Errorf("queria a ativa e depois a encerrada:\n%s", out)
+		}
+	})
+
+	t.Run("CA-16.1 remover sem nada ligado", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("subject", "add", "BD2")
+		out, _, _ := c.run("s\n", "subject", "rm", "BD2")
+		if out != "remover a disciplina BD2 (sem tarefas)? [s/N] ✗ BD2 removida" {
+			t.Errorf("saida: %q", out)
+		}
+		out, _, _ = c.run("\n", "subject", "add", "BD3")
+		out, _, _ = c.run("n\n", "subject", "rm", "BD3")
+		if out != "remover a disciplina BD3 (sem tarefas)? [s/N] BD3 mantida" {
+			t.Errorf("saida: %q", out)
+		}
+	})
+}
+
+// expectGrid monta uma tabela qualquer (cabecalho e linhas) com o alinhamento do neivi
+func expectGrid(head []string, rows ...[]string) string {
+	var tb table
+	tb.fit(head)
+	for _, r := range rows {
+		tb.fit(r)
+	}
+	lines := []string{tb.line(head)}
+	for _, r := range rows {
+		lines = append(lines, tb.line(r))
+	}
+	return strings.Join(lines, "\n")
+}

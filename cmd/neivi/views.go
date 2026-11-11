@@ -386,7 +386,11 @@ func runShow(db *sql.DB, args []string) {
 	field("prioridade", dash(t.Priority))
 	field("prazo", due)
 	field("EST", dash(formatEst(t.EstimateMin)))
-	field("disciplina", codeName(t.SubjectCode, t.SubjectName))
+	disc := codeName(t.SubjectCode, t.SubjectName)
+	if t.SubjectInherited {
+		disc = t.SubjectCode + " (do projeto)" // RN-14
+	}
+	field("disciplina", disc)
 	field("projeto", codeName(t.ProjectCode, t.ProjectName))
 	field("criada", created)
 	field("situacao", situation)
