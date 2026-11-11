@@ -116,7 +116,7 @@ Especifica os requisitos do projeto Neivi da v0.1, para guiar a implementação 
 | Prazo             | Data limite para realizar uma tarefa |
 | EST               | Estimativa de tempo para realizar uma tarefa |
 | Descricao         | Detalhe da tarefa, visto so nos detalhes, fora da listagem |
-| Prioridade        | Nivel de importancia de uma tarefa (A a D), usado para decidir o que fazer primeiro; D eh uma prioridade definida (baixa), diferente de vazio (ainda nao decidida) |
+| Prioridade        | Nivel de importancia de uma tarefa (A a D), usado para decidir o que fazer primeiro; D eh uma prioridade definida (baixa), diferente de vazio (ainda nao decidida); criterio de cada nivel na RN-15 |
 | Atrasada          | Tarefa nao concluida cuja a data ja passou, sem considerar o dia atual |
 | Urgente           | Tarefa nao concluida com prazo no dia atual, de qualquer prioridade (D-27) |
 | Importante        | Tarefa nao concluida de prioridade A e sem prazo (D-27) |
@@ -210,7 +210,7 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
   Se mudar: a tarefa sem disciplina nao aparece como vinda das aulas no C7 (D-20).
 - **S-08:** Uso o neivi sempre no mesmo fuso horario.
   Se mudar: dia, tarefa nova, atrasada, urgente e habitos ficam errados. Ajuste futuro.
-- **S-09:** Copio o backup para um HD externo de tempo em tempo.
+- **S-09:** Copio o backup para um HD externo uma vez por mes (RNF-03).
   Se mudar: se o computador der pau, perco os dados desde a ultima copia.
 
 ### Dependencias
@@ -222,6 +222,359 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
 - **DEP-03:** HD externo para guardar as copias do backup.
   Se mudar: ver S-09.
 
+
+# 3. User stories
+
+## Indice
+
+| ID    | Titulo | Prioridade | Fatia | Cenarios | Status |
+|-------|--------|------------|-------|----------|--------|
+| US-01 | Registro rapido de tarefa | Must | 1 | C2 | testada |
+| US-02 | Registro completo de tarefa | Must | 1 | C2, C1 | testada |
+| US-03 | Completar ou mudar uma tarefa | Must | 1 | C8, C2 | testada |
+| US-04 | Concluir tarefas | Must | 1 | C4, C10 | testada |
+| US-05 | Reabrir tarefas | Must | 1 | C4 | testada |
+| US-06 | Remover tarefas | Must | 1 | C8, C2 | testada |
+
+Prioridade: Must (sem ela o v0.1 nao fica pronto, D-22), Should (importante, mas da para viver sem), Could (se sobrar tempo).
+Status: - (nao escrita), rascunho, pronta, testada.
+
+## Modelo
+
+Copiar para cada story nova. Cada CA vira um teste.
+
+```
+### US-XX · Titulo curto (o que precisa existir)
+
+Prioridade: Must · Fatia: 1 · Cenarios: C2 · Regras: RN-XX, D-XX
+
+**Como** eu [em qual situacao: com pressa na aula, revisando o dia...],
+**quero** [acao, na minha linguagem, nao na do sistema],
+**para** [o porque; se nao tiver, talvez a story nao precise existir].
+
+**Criterios de aceitacao**
+- **CA-XX.1** *(caminho feliz)* Dado [estado inicial com valores concretos],
+  quando [acao],
+  entao [resultado que eu vejo].
+- **CA-XX.2** *(limite)* Dado ..., quando ..., entao ...
+- **CA-XX.3** *(entrada invalida)* Dado ..., quando ..., entao ...
+- **CA-XX.4** *(estado incompativel)* Dado ..., quando ..., entao ...
+
+**Notas** (opcional): duvidas que viraram Q-XX, o que ficou para outra fatia.
+```
+
+
+Checklist antes de marcar como pronta (INVEST): independente, negociavel, valiosa (o "para" eh real), estimavel, pequena, testavel (consigo imaginar o teste de cada CA).
+
+## Fatia 1 · Tarefas
+
+
+---
+
+### US-01 · Registro rapido de tarefa
+
+Prioridade: Must · Fatia: 1 · Cenarios: C2 · Regras: RN-01, RN-02, RN-03, RN-04
+
+**Como** eu, no meio de outra tarefa, quando surge uma tarefa nova (uma ideia ou algo que a tarefa atual gerou),
+**quero** anotar rapido so o titulo,
+**para** voltar pro que estava fazendo sem perder o foco, e completar o resto (prioridade, EST) na revisao do dia (C8).
+
+**Criterios de aceitacao**
+- **CA-01.1** *(caminho feliz)* Dado que nao tenho tarefas,
+  quando registro `neivi add comprar cabo HDMI`,
+  entao a tarefa 1 eh criada com esse titulo, sem prioridade (incompleta, D-10), e aparece `+ 1 · comprar cabo HDMI`.
+- **CA-01.2** *(entrada invalida)* Dado que nao tenho tarefas,
+  quando registro `neivi add` (sem texto),
+  entao aparece `erro: tarefa sem titulo` e nenhuma tarefa eh criada.
+- **CA-01.3** *(entrada invalida)* Dado que nao tenho tarefas,
+  quando registro `neivi add pri:A` (so marcas, sem titulo),
+  entao aparece `erro: tarefa sem titulo` e nenhuma tarefa eh criada.
+- **CA-01.4** *(estado incompativel)* Dado que tenho `comprar cabo HDMI` (id 1) nao concluida,
+  quando registro `neivi add Comprar  cabo hdmi pri:B` (outra caixa, espaco a mais, com prioridade),
+  entao a tarefa 2 eh criada e aparece `+ 2 · B · Comprar cabo hdmi` e `aviso: ja existe a tarefa 1 com esse titulo` (RN-01).
+- **CA-01.5** *(limite)* Dado que tenho `comprar cabo HDMI` (id 1) concluida,
+  quando registro `neivi add comprar cabo HDMI`,
+  entao a tarefa 2 eh criada e aparece `+ 2 · comprar cabo HDMI`, sem aviso (RN-01: so conta tarefa nao concluida).
+- **CA-01.6** *(limite)* Dado que nao tenho tarefas,
+  quando registro `neivi add reuniao 10:30`,
+  entao a tarefa 1 eh criada com o titulo "reuniao 10:30" e aparece `+ 1 · reuniao 10:30` (D-31).
+
+**Notas:** CA-01.4 e CA-01.5 nao existem no codigo hoje (o add cria sem avisar), e a confirmacao hoje eh so `Tarefa: 1 adicionada`. Os erros das marcas (`pri:E`, `@XX`...) estao na US-02.
+
+---
+
+### US-02 · Registro completo de tarefa
+
+Prioridade: Must · Fatia: 1 · Cenarios: C2, C1 · Regras: RN-03, RN-05, RN-06, RN-07, RN-08, RN-09
+
+**Como** eu, organizando o dia com tempo livre, ou no meio de outra tarefa quando surge uma tarefa urgente,
+**quero** registrar a tarefa numa linha so, ja com os campos que eu sei (prioridade, prazo, disciplina ou projeto; EST e descricao quando der),
+**para** a tarefa urgente nao ser esquecida nem perder o prazo (ela ja aparece no resumo diario, D-27), e eu entender depois do que ela se trata.
+
+**Criterios de aceitacao** (hoje = ter 10/11/2026; @ED e @BD cadastradas)
+- **CA-02.1** *(caminho feliz)* Quando registro `neivi add entregar lista @ED pri:A due:sex est:1h -- exercicios 3 a 7`,
+  entao a tarefa 1 eh criada e aparece `+ 1 · A · sex 13/11 · 1h · entregar lista @ED …` (o `…` indica descricao).
+- **CA-02.2** *(caminho feliz, so alguns campos)* Quando registro `neivi add revisar slide @BD pri:B`,
+  entao aparece `+ 1 · B · revisar slide @BD` (campos vazios nao aparecem).
+- **CA-02.3** *(limite)* Quando registro `neivi add prova due:ter`,
+  entao o prazo eh a proxima terca: `+ 1 · ter 17/11 · prova` (RN-05).
+- **CA-02.4** *(limite)* Quando registro `neivi add c due:09/11` (sem ano, data que ja passou),
+  entao o prazo vai para o ano seguinte e o ano aparece: `+ 1 · ter 09/11/27 · c` (RN-05).
+- **CA-02.5** *(limite)* Quando registro `neivi add c due:09/11/26` (com ano, no passado),
+  entao a tarefa eh criada ja atrasada: `+ 1 · seg 09/11 · c` (RN-05).
+- **CA-02.6** *(entrada invalida)* Quando registro uma tarefa com uma marca invalida,
+  entao nada eh criado e aparece a mensagem com o que esta errado e como resolver (RN-07):
+
+  | Entrada                      | Mensagem |
+  |------------------------------|----------|
+  | `neivi add lista @XX pri:A`  | `erro: disciplina XX nao cadastrada (cadastrar: neivi subject add XX)` |
+  | `neivi add lista pri:E`      | `erro: prioridade E invalida (use A, B, C ou D)` |
+  | `neivi add lista due:32/11`  | `erro: data 32/11 invalida (use dd/mm, dd/mm/aa, hoje, amanha ou seg...dom)` |
+  | `neivi add lista due:29/02`  | `erro: 29/02 nao existe em 2027` |
+  | `neivi add lista est:abc`    | `erro: estimativa abc invalida (use 30m, 1h, 1h15 ou 90)` |
+  | `neivi add lista pri:A pri:B`| `erro: mais de uma prioridade (pri:A e pri:B)` |
+
+**Notas:** estado incompativel (tarefa duplicada) ja coberto pela RN-01 e pelo CA-01.4. Diferencas com o codigo hoje: a confirmacao (hoje so `Tarefa: 1 adicionada`) e as mensagens de erro.
+
+---
+
+### US-03 · Completar ou mudar uma tarefa
+
+Prioridade: Must · Fatia: 1 · Cenarios: C8, C2 · Regras: RN-01, RN-02, RN-03, RN-07, RN-10
+
+**Como** eu, na revisao do dia (ou, raramente, no meio do dia quando chega uma demanda urgente),
+**quero** mudar so os campos que preciso de uma tarefa por vez: completar as incompletas, redefinir a prioridade ou adiar o prazo,
+**para** reorganizar o dia rapido, sem redigitar a tarefa e sem perder informacao (o id e a data de criacao continuam os mesmos, entao uma tarefa antiga nao volta a parecer nova, D-11).
+
+**Criterios de aceitacao** (hoje = ter 10/11/2026; tarefa 4 = `entregar lista @ED pri:A due:sex est:1h -- exercicios 3 a 7`)
+- **CA-03.1** *(caminho feliz, adiar)* Quando registro `neivi edit 4 due:seg`,
+  entao so o prazo muda e aparece `~ 4 · A · seg 16/11 · 1h · entregar lista @ED …`; o id e a data de criacao nao mudam.
+- **CA-03.2** *(caminho feliz, completar)* Dado a tarefa 5 `comprar cabo HDMI` sem prioridade (incompleta),
+  quando registro `neivi edit 5 pri:B due:amanha`,
+  entao aparece `~ 5 · B · qua 11/11 · comprar cabo HDMI` e ela deixa de ser incompleta (RN-02).
+- **CA-03.3** *(caminho feliz, titulo)* Quando registro `neivi edit 4 entregar lista 2`,
+  entao so o titulo muda: `~ 4 · A · sex 13/11 · 1h · entregar lista 2 @ED …`.
+- **CA-03.4** *(limite, apagar campos)* O valor `-` apaga o campo (RN-10):
+
+  | Entrada               | Resultado |
+  |-----------------------|-----------|
+  | `neivi edit 4 due:-`  | `~ 4 · A · 1h · entregar lista @ED …` |
+  | `neivi edit 4 pri:-`  | `~ 4 · sex 13/11 · 1h · entregar lista @ED …` (volta a ser incompleta, RN-02) |
+  | `neivi edit 4 @-`     | `~ 4 · A · sex 13/11 · 1h · entregar lista …` |
+  | `neivi edit 4 -- -`   | `~ 4 · A · sex 13/11 · 1h · entregar lista @ED` (sem o `…`) |
+
+- **CA-03.5** *(entrada invalida)* Nada muda e aparece a mensagem com o que esta errado e como resolver (RN-07):
+
+  | Entrada                  | Mensagem |
+  |--------------------------|----------|
+  | `neivi edit 99 pri:B`    | `erro: tarefa 99 nao existe (veja os ids no neivi ls)` |
+  | `neivi edit 4`           | `erro: nada para mudar na tarefa 4 (exemplo: neivi edit 4 pri:B due:sex)` |
+  | `neivi edit`             | `erro: falta o id da tarefa (exemplo: neivi edit 1 pri:B)` |
+  | `neivi edit abc pri:B`   | `erro: id abc invalido (use o numero que aparece no ls)` |
+  | `neivi edit 4 due:32/11` | `erro: data 32/11 invalida (use dd/mm, dd/mm/aa, hoje, amanha ou seg...dom)` |
+
+- **CA-03.6** *(estado incompativel)* Dado a tarefa 2 `comprar cabo` concluida,
+  quando registro `neivi edit 2 pri:C`,
+  entao a tarefa muda e aparece `~ 2 · C · comprar cabo` e `aviso: a tarefa 2 esta concluida`.
+- **CA-03.7** *(estado incompativel)* Dado a tarefa 1 `comprar cabo HDMI` nao concluida,
+  quando registro `neivi edit 4 comprar cabo hdmi`,
+  entao o titulo muda e aparece `aviso: ja existe a tarefa 1 com esse titulo` (RN-01).
+
+**Notas:** editar varias tarefas de uma vez fica para depois (rascunho). O titulo nunca fica vazio (RN-03): nao existe jeito de apaga-lo, so de troca-lo. Diferencas com o codigo hoje: a confirmacao (hoje `tarefa 4 editada`), as mensagens de `edit` sem texto/sem id/id invalido (hoje mostra a ajuda), o aviso de concluida e o aviso de duplicada.
+
+---
+
+### US-04 · Concluir tarefas
+
+Prioridade: Must · Fatia: 1 · Cenarios: C4, C10 · Regras: RN-11, RN-12
+
+**Como** eu, logo depois de terminar uma tarefa, ou no fim do dia / comeco do dia seguinte marcando o que esqueci,
+**quero** marcar uma ou varias tarefas como feitas, dizendo se foi ontem quando for o caso,
+**para** guardar o historico do que fiz (estatistica e revisao da semana, C10) e ter a motivacao de ver quanto ja fiz no dia.
+
+**Criterios de aceitacao** (hoje = ter 10/11/2026; tarefas 3 `entregar lista @ED pri:A`, 5 `comprar cabo HDMI pri:B`, 8 `revisar slide @BD` pendentes; a tarefa 1 ja foi concluida hoje)
+- **CA-04.1** *(caminho feliz)* Quando registro `neivi done 3 5 8`,
+  entao as tres ficam concluidas em 10/11 e aparece:
+  `✓ 3 · A · entregar lista @ED`
+  `✓ 5 · B · comprar cabo HDMI`
+  `✓ 8 · revisar slide @BD`
+  `hoje: 4 concluidas`
+- **CA-04.2** *(caminho feliz, ontem)* Dado que nada foi concluido ontem,
+  quando registro `neivi done 3 5 ontem`,
+  entao as duas ficam concluidas em 09/11 e aparece:
+  `✓ 3 · A · entregar lista @ED (ontem)`
+  `✓ 5 · B · comprar cabo HDMI (ontem)`
+  `ontem: 2 concluidas`
+- **CA-04.3** *(limite)* Dado a tarefa 9 criada hoje,
+  quando registro `neivi done 9 ontem`,
+  entao ela fica concluida em 09/11, mesmo sendo antes da criacao (RN-11).
+- **CA-04.4** *(entrada invalida, id que nao existe)* Quando registro `neivi done 3 99`,
+  entao a 3 eh concluida e aparece `✓ 3 · A · entregar lista @ED`, `aviso: tarefa 99 nao existe (veja os ids no neivi ls)` e o contador (RN-12).
+- **CA-04.5** *(entrada invalida, recusa tudo)* Nada eh concluido e aparece (RN-12):
+
+  | Entrada              | Mensagem |
+  |----------------------|----------|
+  | `neivi done 3 otem`  | `erro: "otem" nao eh um id nem "ontem" (exemplo: neivi done 3 5 ontem)` |
+  | `neivi done abc`     | `erro: "abc" nao eh um id nem "ontem" (exemplo: neivi done 3 5 ontem)` |
+  | `neivi done`         | `erro: falta o id da tarefa (exemplo: neivi done 3 5)` |
+
+- **CA-04.6** *(estado incompativel)* Quando registro `neivi done 1 3` (a 1 ja estava concluida),
+  entao a 3 eh concluida, aparece `aviso: a tarefa 1 ja estava concluida` e a data de conclusao da 1 nao muda (RN-11).
+
+**Notas:** concluir com datas mais antigas que ontem fica para depois, se for frequente (rascunho). Ver as feitas do dia separadas fica para a fatia 4. Diferencas com o codigo hoje: confirmacao com `✓` e contador, o `ontem`, as mensagens e a recusa de palavra invalida.
+
+---
+
+### US-05 · Reabrir tarefas
+
+Prioridade: Must · Fatia: 1 · Cenarios: C4 · Regras: RN-12
+
+**Como** eu, quando marquei uma tarefa como feita por engano ou percebi que faltou algo nela,
+**quero** desfazer a conclusao de uma ou mais tarefas,
+**para** ela voltar para as pendentes com tudo como estava, sem recriar e sem contar no meu historico algo que nao terminei.
+
+**Criterios de aceitacao** (tarefas 5 `comprar cabo HDMI pri:B` e 8 `revisar slide @BD` concluidas; 2 `ligar` pendente)
+- **CA-05.1** *(caminho feliz)* Quando registro `neivi reopen 5`,
+  entao ela volta a ser pendente, sem data de conclusao, com os outros campos iguais, e aparece `↺ 5 · B · comprar cabo HDMI` (sem contador).
+- **CA-05.2** *(caminho feliz, varias)* Quando registro `neivi reopen 5 8`,
+  entao aparecem `↺ 5 · B · comprar cabo HDMI` e `↺ 8 · revisar slide @BD`.
+- **CA-05.3** *(estado incompativel)* Quando registro `neivi reopen 2`,
+  entao nada muda e aparece `aviso: a tarefa 2 nao estava concluida`.
+- **CA-05.4** *(entrada invalida)* (RN-12):
+
+  | Entrada               | Resultado |
+  |-----------------------|-----------|
+  | `neivi reopen 5 99`   | reabre a 5 e aparece `aviso: tarefa 99 nao existe (veja os ids no neivi ls)` |
+  | `neivi reopen abc`    | nada muda; `erro: "abc" nao eh um id (exemplo: neivi reopen 5)` |
+  | `neivi reopen`        | nada muda; `erro: falta o id da tarefa (exemplo: neivi reopen 5)` |
+
+**Notas:** diferencas com o codigo hoje: confirmacao com `↺` e as mensagens.
+
+---
+
+### US-06 · Remover tarefas
+
+Prioridade: Must · Fatia: 1 · Cenarios: C8, C2 · Regras: RN-01, RN-12, RN-13
+
+**Como** eu, quando registrei algo muito errado (editar sairia mais caro que refazer), quando desisti de uma tarefa que perdeu o sentido, ou quando o aviso de duplicada mostra que eh mesmo a mesma tarefa,
+**quero** apagar a tarefa de vez, confirmando uma por uma,
+**para** a lista ficar so com o que eu ainda vou fazer, sem guardar o que nao fiz.
+
+**Criterios de aceitacao** (tarefas 3 `entregar lista @ED pri:A due:sex` e 5 `comprar cabo HDMI pri:B` pendentes; 1 `ligar` concluida ontem)
+- **CA-06.1** *(caminho feliz)* Quando registro `neivi rm 3`,
+  entao aparece a pergunta `remover 3 · A · sex 13/11 · entregar lista @ED? [s/N]`;
+  respondendo `s`, aparece `✗ 3 removida` e a tarefa some (das pendentes e do historico).
+- **CA-06.2** *(limite, resposta)* So `s` remove (RN-13):
+
+  | Resposta                          | Resultado |
+  |-----------------------------------|-----------|
+  | `s`                               | `✗ 3 removida` |
+  | `N`, `n`, Enter ou qualquer outra | `3 mantida`, nada muda |
+
+- **CA-06.3** *(caminho feliz, varias)* Quando registro `neivi rm 3 5`, respondo `s` para a 3 e Enter para a 5,
+  entao a 3 eh removida e a 5 continua; uma pergunta por tarefa.
+- **CA-06.4** *(estado incompativel)* Quando registro `neivi rm 1` (concluida),
+  entao a pergunta avisa: `remover 1 · ligar (concluida, sai do historico)? [s/N]`.
+- **CA-06.5** *(entrada invalida)* (RN-12):
+
+  | Entrada          | Resultado |
+  |------------------|-----------|
+  | `neivi rm 3 99`  | pergunta da 3 normalmente e aparece `aviso: tarefa 99 nao existe (veja os ids no neivi ls)` |
+  | `neivi rm abc`   | nada muda; `erro: "abc" nao eh um id (exemplo: neivi rm 3)` |
+  | `neivi rm`       | nada muda; `erro: falta o id da tarefa (exemplo: neivi rm 3)` |
+
+**Notas:** sem estado "cancelada" (descartado: nao quero guardar o que nao fiz). Diferencas com o codigo hoje: a pergunta com a linha curta e o aviso de concluida, `✗ removida`/`mantida` e as mensagens.
+
+---
+
+# 4. Regras de negocio
+
+Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte) e onde eh usada.
+
+- **RN-01** Tarefa duplicada: tarefa nao concluida com o mesmo titulo, ignorando maiusculas/minusculas e espacos extras. Marcas (prioridade, prazo, disciplina, projeto...) nao contam. Duplicada gera aviso, nunca erro; tarefa concluida com o mesmo titulo nao gera aviso.
+  Fonte: CA-01.4, CA-01.5 · Usada em: US-01, US-02, US-03, US-06
+- **RN-02** Tarefa incompleta: tarefa sem prioridade definida. Eh deduzida, sem marcacao.
+  Fonte: D-10, D-17 · Usada em: US-01, US-03
+- **RN-03** Titulo obrigatorio: toda tarefa tem titulo. O titulo eh o texto que sobra depois de tirar as marcas; so marcas (ex.: `pri:A`) nao formam titulo.
+  Fonte: CA-01.2, CA-01.3 · Usada em: US-01, US-02, US-03
+- **RN-04** Palavra com `:` que nao eh uma marca conhecida faz parte do titulo (ex.: `reuniao 10:30`, `aula:3`).
+  Fonte: D-31, CA-01.6 · Usada em: US-01
+- **RN-05** Prazo: aceita `dd/mm`, `dd/mm/aa` ou `dd/mm/aaaa` (com `/` ou `-`), `hoje`, `amanha` e `seg`...`dom`. Sem ano vale a proxima ocorrencia (hoje conta como hoje; data que ja passou vai para o ano seguinte). Dia da semana eh sempre o proximo (`ter` numa terca = terca seguinte). `29/02` sem ano so vale em ano bissexto. Prazo no passado so com o ano escrito.
+  Fonte: SPEC 4, CA-02.3 a CA-02.5 · Usada em: US-02
+- **RN-06** Disciplina e projeto da tarefa precisam estar cadastrados.
+  Fonte: SPEC 4 · Usada em: US-02
+- **RN-07** Uma marca invalida recusa a operacao inteira (registro ou edicao); nada eh criado ou mudado pela metade.
+  Fonte: CA-02.6, CA-03.5 · Usada em: US-02, US-03
+- **RN-08** Prioridade: A, B, C ou D, aceita minuscula; no maximo uma por tarefa.
+  Fonte: D-10, glossario · Usada em: US-02
+- **RN-09** Estimativa: minutos ou horas (`30m`, `1h`, `1h15`, `90` = 90 minutos), sempre maior que zero.
+  Fonte: SPEC 4 · Usada em: US-02
+- **RN-10** Edicao parcial: so muda o que aparece no texto; o resto fica como esta. O valor `-` apaga o campo (`pri:-`, `due:-`, `est:-`, `@-`, `+-`, `-- -`). Texto solto vira o titulo novo. O id e a data de criacao nunca mudam.
+  Fonte: SPEC 4, D-11, CA-03.1 a CA-03.4 · Usada em: US-03
+- **RN-11** Data de conclusao: hoje, ou ontem quando escrevo `ontem`; nenhuma outra data no v0.1. Pode ser anterior a data de criacao. Concluir de novo uma tarefa concluida nao muda a data.
+  Fonte: D-21 (mesma ideia dos habitos), CA-04.2, CA-04.3, CA-04.6 · Usada em: US-04
+- **RN-12** Comandos com varios ids: id que nao existe gera aviso e os outros seguem; palavra que nao eh id (nem `ontem`, no done) recusa tudo, porque nao da para saber o que eu quis dizer.
+  Fonte: CA-04.4, CA-04.5, CA-05.4, CA-06.5 · Usada em: US-04, US-05, US-06
+- **RN-13** Remover apaga de vez: a tarefa sai das pendentes e do historico, sem estado de cancelada. Sempre pergunta, uma por tarefa, e so `s` confirma. Se a tarefa esta concluida, a pergunta avisa que ela sai do historico.
+  Fonte: CA-06.1 a CA-06.4 · Usada em: US-06
+- **RN-14** Disciplina efetiva: a disciplina de uma tarefa eh o `@` dela, se tiver; senao, a do projeto. Eh deduzida, nunca copiada (D-17): trocar a disciplina do projeto muda a de todas as tarefas dele sem `@`. Filtro por disciplina usa a disciplina efetiva, entao tarefa com `@` diferente do projeto nunca aparece na disciplina do projeto.
+  Fonte: D-15, D-17, secao 7 · Usada em: US-02 (e nos filtros da fatia 4)
+- **RN-15** Criterio de prioridade. A prioridade mede a importancia; a urgencia eh o prazo (`due:`).
+
+  | Nivel | Definicao | Pergunta-teste | Exemplos |
+  |-------|-----------|----------------|----------|
+  | **A** | Consequencia seria ou com outra pessoa | Se eu atrasar, perco nota ou dinheiro, ou alguem alem de mim eh prejudicado? | entregar parte do feedback360, pagar contas, preparar aula para aluno, trabalho em grupo |
+  | **B** | Consequencia real, mas recuperavel, que so me afeta | Se eu atrasar, eu sofro, mas consigo recuperar? | estudar o conteudo da aula que faltei, neivi, levantamento de notebook para o meu pai |
+  | **C** | Seria bom, mas sem consequencia seria se atrasar | Ninguem sofre se atrasar, mas quero fazer? | projetos pessoais (costumam ser C), configurar o Hyprland |
+  | **D** | Talvez um dia | Se ficar 3 meses parado, tudo bem? | testar um emulador, curiosidades |
+  | vazia | Ainda nao decidida (incompleta, RN-02) | Ainda nao pensei nela? | o que entrou correndo pela US-01 |
+
+  Fonte: Q-14 · Usada em: US-02, US-03
+
+# 5. Requisitos nao funcionais
+
+- **RNF-01** Desempenho: todo comando de tarefa (`add`, `edit`, `done`, `reopen`, `rm`) responde em menos de 1 segundo com 10 000 tarefas no banco (5x o uso esperado de um ano, ~2000).
+  Como verificar: `time` num banco de teste gerado com 10 000 tarefas. · Fonte: C2
+- **RNF-02** Confiabilidade (copia local): uma copia diaria consistente do banco (nunca `cp` do arquivo aberto), conferida com `integrity_check`, guardando as 7 ultimas diarias e 4 semanais. Perda maxima aceita: 1 dia.
+  Como verificar: o timer roda todo dia; uma vez por mes, restaurar uma copia num banco separado e conferir que o neivi abre e lista as tarefas. · Fonte: DEP-02, D-29
+- **RNF-03** Confiabilidade (fora da maquina): ate existir o servidor, o dump vai todo dia para o repositorio privado `todo` no GitHub (excecao a R-03, D-33) e, uma vez por mes, para o HD externo (S-09). Com o servidor, ele vira a copia diaria e o GitHub fica espacado.
+  Como verificar: o commit do dia aparece no repositorio; a copia do mes esta no HD. · Fonte: D-33, S-09
+- **RNF-04** Usabilidade (mensagens): toda mensagem de erro ou aviso diz o que esta errado e como resolver, sem detalhes internos do programa (ex.: nada de `strconv.ParseInt`).
+  Como verificar: os CAs de entrada invalida das stories. · Fonte: US-02 a US-06
+- **RNF-05** Usabilidade (confirmacao): depois de criar, editar, concluir, reabrir ou remover, o neivi mostra a tarefa numa linha curta: simbolo (`+` criar, `~` editar, `✓` concluir, `↺` reabrir, `✗` remover), id, prioridade, prazo (`dia dd/mm`, com o ano so quando nao eh o atual), EST, titulo, `@disciplina`, `+projeto` e `…` se tiver descricao. Campos vazios nao aparecem. O `done` termina com o contador do dia.
+  Como verificar: os CAs de caminho feliz das stories. · Fonte: US-01 a US-06
+
+# 6. Casos de uso
+
+Nenhum na fatia 1 (as stories cobrem os fluxos). O primeiro sera a importacao do Ganbatte (fatia 5).
+
+# 7. Modelo conceitual
+
+Entidades e relacionamentos da fatia 1 (sem tabelas nem colunas; isso eh o SPEC 8).
+
+```
+    Disciplina 1 ─────── 0..N Tarefa
+        │ 1                   │ 0..N
+        │                     │
+        │ 0..N                │
+        └──────── Projeto 1 ──┘
+```
+
+- **Tarefa:** titulo, descricao, prioridade, prazo, EST, data de criacao, data de conclusao.
+- **Disciplina:** codigo (o que vai depois do `@`), nome.
+- **Projeto:** codigo (o que vai depois do `+`), nome. Os outros atributos (D-06) entram na fatia 2.
+
+Relacionamentos:
+- Tarefa **eh de** no maximo uma Disciplina (opcional); uma Disciplina tem varias Tarefas.
+- Tarefa **pertence a** no maximo um Projeto (opcional); um Projeto tem varias Tarefas.
+- Projeto **eh de** no maximo uma Disciplina (opcional, D-06); uma Disciplina tem varios Projetos.
+- Tarefa pode ter Disciplina e Projeto ao mesmo tempo, inclusive com uma Disciplina diferente da do Projeto (RN-14).
+
+Deduzido, nunca guardado (D-17):
+- tarefa incompleta (RN-02) e tarefa nova (D-11);
+- disciplina efetiva da tarefa (RN-14);
+- tipo do projeto, academico ou pessoal (D-06);
+- atrasada, urgente e importante (D-27, fatia 4).
 
 # 8. Decisoes e questoes em aberto
 
@@ -240,12 +593,12 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
 - **Q-11** Nota sem avaliacao registrada -> resolvida em D-14
 - **Q-12** Habito x tarefa recorrente -> resolvida no glossario (Habito)
 - **Q-13** Tarefa recorrente no v0.1? -> resolvida em D-16
-- **Q-14** Criterios de cada nivel de prioridade (A a D), para nem tudo ficar no A nem tudo vazio. *(em aberto)*
+- **Q-14** Criterios de cada nivel de prioridade (A a D), para nem tudo ficar no A nem tudo vazio. -> resolvida na RN-15
 - **Q-15** Adicionar ou concluir tarefa em disciplina ou projeto inativo: o sistema bloqueia, avisa, ou eu so suponho que nao vou fazer? (ex-S-08) *(em aberto)*
 - **Q-16** Disciplina precisa de situacao ou semestre, para saber quais sao as atuais? Hoje so o projeto tem situacao. (ex-S-08) *(em aberto)*
 - **Q-17** Quais arquivos do Ganbatte importar: todo.txt, done.txt, disciplinas.txt, hunter/avaliacoes.txt, os .json do hunter? (DEP-01) -> parcial: no v0.1 so tarefas e disciplinas; o hunter fica para o v0.2 (D-23); o done.txt eh a Q-18
 - **Q-18** Importar o done.txt (historico antigo de tarefas concluidas)? *(em aberto, fatia de importacao)*
-- **Q-19** Para onde vai a copia do backup: repositorio privado, HD externo (S-09) ou os dois? *(em aberto, fatia de backup)*
+- **Q-19** Para onde vai a copia do backup: repositorio privado, HD externo (S-09) ou os dois? -> resolvida em D-33
 
 ### Decisoes
 
@@ -278,7 +631,7 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
 - **D-14** No v0.1, notas guardam so o valor obtido em cada avaliacao (sem pesos e media); o plano de avaliacao (pesos, N1/N2, media) fica para o futuro. Se a nota chegar e a avaliacao nao existir, a avaliacao eh criada na hora, ja com a nota.
   Porque: o esquema de pesos da PUC varia por professor e muda no semestre; merece uma fatia propria. Registrar a nota ja atende o C6.
 - **D-15** O filtro por disciplina inclui as tarefas dos projetos ligados a ela.
-  Porque: as tarefas de um projeto de uma disciplina sao dela; evita repetir a disciplina em cada tarefa.
+  Porque: as tarefas de um projeto de uma disciplina sao dela; evita repetir a disciplina em cada tarefa. *(refinada na RN-14: so as tarefas sem @ proprio)*
 - **D-16** Sem tarefas recorrentes no v0.1.
   Porque: nao preciso agora.
 - **D-17** Principio: deduzir em vez de guardar (tarefa nova, tarefa incompleta, tipo do projeto).
@@ -313,3 +666,24 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
   Porque: o campo so existia para elas voltarem iguais no export (D-24); na descricao a informacao fica a vista sem mudar o banco, e o TODO.txt original continua no historico do git.
 - **D-32** O requisitos.md diz o que o neivi faz (escopo, cenarios, regras, stories); o SPEC.md diz como (sintaxe, arquitetura, modelo de dados, comandos).
   Porque: os dois falando de escopo iam se contradizer.
+- **D-33** Excecao a R-03: o backup vai para o repositorio privado `todo` no GitHub, sem criptografia, ate existir o servidor em casa; depois, so de forma espacada. Q-19 resolvida.
+  Porque: ate la eh o unico jeito automatico de tirar os dados de casa; o HD externo eh manual (uma vez por mes). Ressalva: no v0.2 as notas tambem iriam para o GitHub; se incomodar, criptografar com `age`.
+
+# 9. Rastreabilidade
+
+Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos casos comecam pelo id do criterio.
+
+| Story | Criterios | Testes |
+|-------|-----------|--------|
+| US-01 | CA-01.1 a CA-01.6 | `cmd/neivi`: TestAdd (CA-01.1 a 01.6); `internal/task`: TestNormalizeTitle (CA-01.4); `internal/store`: TestFindDuplicate (CA-01.4, 01.5) |
+| US-02 | CA-02.1, 02.2 | `cmd/neivi`: TestFormatLine (02.1, 02.2), TestAdd (02.2) |
+| US-02 | CA-02.3 a 02.5 | `cmd/neivi`: TestFormatDue; `internal/todotxt`: TestDueDate (datas relativas a um "hoje" fixo) |
+| US-02 | CA-02.6 | `cmd/neivi`: TestAdd (cada linha da tabela, menos o 29/02); `internal/todotxt`: TestDueDate (29/02); `internal/store`: TestSubjectIDByCode |
+| US-03 | CA-03.1, 03.2 | `cmd/neivi`: TestFormatLine (03.1), TestFormatDue (03.1, 03.2) |
+| US-03 | CA-03.3 a 03.7 | `cmd/neivi`: TestEdit; `internal/store`: TestFindDuplicate (03.7) |
+| US-04 | CA-04.1 a 04.6 | `cmd/neivi`: TestDone, TestParseIDs; `internal/store`: TestDoneTaskECountDone (04.1 a 04.3) |
+| US-05 | CA-05.1 a 05.4 | `cmd/neivi`: TestReopen, TestParseIDs; `internal/store`: TestReopenTask |
+| US-06 | CA-06.1 a 06.5 | `cmd/neivi`: TestRm; `internal/store`: TestRmTask |
+
+Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por caso. Os criterios que dependem do dia de hoje (prazos com dia da semana) sao conferidos nas funcoes de formatacao e de data, com o "hoje" fixo em ter 10/11/2026, porque os comandos usam o relogio real.
+

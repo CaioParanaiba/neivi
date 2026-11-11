@@ -144,7 +144,7 @@ Comandos já definidos:
 | `neivi ls [filtros] [palavras]` | lista as tarefas (ver abaixo) |
 | `neivi today [due]` | resumo diário (ver abaixo) |
 | `neivi show <id>` | mostra todos os campos de uma tarefa |
-| `neivi done <id>...` | conclui uma ou mais tarefas |
+| `neivi done <id>... [ontem]` | conclui uma ou mais tarefas, hoje ou ontem |
 | `neivi reopen <id>...` | reabre uma ou mais tarefas concluídas |
 | `neivi edit <id> <texto>` | muda só os campos que aparecem no texto (seção 4) |
 | `neivi rm <id>...` | remove uma ou mais tarefas, pedindo confirmação de cada uma |
@@ -152,6 +152,18 @@ Comandos já definidos:
 | `neivi subject ls` | lista as disciplinas |
 | `neivi project add <código> [nome]` | cadastra um projeto |
 | `neivi project ls` | lista os projetos |
+
+**Saída dos comandos de tarefa** (requisitos RNF-04 e RNF-05):
+
+- Confirmação numa linha curta: `+` criar, `~` editar, `✓` concluir, `↺`
+  reabrir, `✗` remover; depois `id · prioridade · prazo · EST · título
+  @disciplina +projeto …`, sem os campos vazios. Prazo como `sex 13/11`, com o
+  ano só quando não é o atual. O `done` termina com `hoje: N concluidas` (ou
+  `ontem:`).
+- Avisos e erros dizem o que está errado e como resolver. Avisos (duplicada,
+  concluída, id que não existe) não impedem a ação; erros não mudam nada.
+- `done`, `reopen` e `rm` leem todos os ids antes de agir: id que não existe
+  só avisa; palavra que não é id (nem `ontem`, no `done`) recusa tudo.
 
 **Listagem.** Sem nada, mostra as pendentes na ordem padrão. Filtros e
 palavras usam a mesma sintaxe da entrada e se combinam:
@@ -209,8 +221,10 @@ Sem convivência: o neivi não escreve no `todo.txt`.
 
 ## 7. Dados e backup
 
-- **Banco:** `~/.local/share/neivi/neivi.db` (padrão XDG). Durante o
-  desenvolvimento, `/tmp/neivi-teste.db`.
+- **Banco:** `$XDG_DATA_HOME/neivi/neivi.db` (padrão
+  `~/.local/share/neivi/neivi.db`); a pasta é criada na primeira execução. A
+  variável `NEIVI_DB` troca o caminho, para testar sem tocar no banco real
+  (`NEIVI_DB=/tmp/neivi-teste.db neivi ls`).
 - **Configuração:** `~/.config/neivi/`.
 - **Driver:** `modernc.org/sqlite` (Go puro, sem cgo) com `database/sql`.
 - **Esquema:** `001_init.sql` embutido no binário (`embed`), com
@@ -228,10 +242,16 @@ pronto do v0.1 (requisitos D-29):
    arquivo aberto.
 2. **Retenção:** últimos 7 diários e 4 semanais.
 3. **Fora da máquina:** dump em texto (`sqlite3 neivi.db .dump`), que volta
-   para um banco novo sem conversão. Destino em aberto (requisitos Q-19).
+   para um banco novo sem conversão. Até existir o servidor: todo dia no
+   repositório privado `todo` (em `neivi/`), sem criptografia (requisitos
+   D-33), e uma vez por mês no HD externo. Com o servidor, ele faz a cópia
+   diária e o GitHub fica espaçado.
 4. **Teste de restauração** pelo menos uma vez por mês, num banco separado.
 
-No v0.1, o backup é um script com timer do systemd.
+No v0.1, o backup é um script (`~/.local/bin/neivi-backup`) com timer do
+systemd do usuário (`neivi-backup.timer`, todo dia às 12:00, `Persistent=true`
+para rodar depois se o PC estava desligado). As cópias ficam em
+`~/.local/share/neivi/backup/` (`diario/`, `semanal/` e o dump `neivi.sql`).
 
 ## 8. Modelo de dados (rascunho)
 
