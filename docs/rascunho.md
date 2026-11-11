@@ -17,6 +17,8 @@
 - Compensar o dia de um habito de dias especificos (fiz na segunda, entao a terca nao precisa) (US-18)
 - Revisoes semanais (financeiro na sexta, estudos no domingo) como tarefas recorrentes, quando recorrencia entrar (D-16)
 
+- Autocompletar no zsh (US-23, depois da semana de uso): nivel 1 = comandos, palavras do ls e valores das marcas (pri:, due:, sit:); nivel 2 = @disciplinas, +projetos, codigos dos habitos que faltam e ids das pendentes com o titulo, via um comando escondido `neivi __complete ...`
+
 ### TUI (futuro)
 - Visao do dia (C1): listagem rapida compacta com tarefas do dia por ordem de prioridade (com contexto de disciplina ou projeto)
 - Organizar aulas (C7): listagem completa de tarefas vinculadas as aulas apenas

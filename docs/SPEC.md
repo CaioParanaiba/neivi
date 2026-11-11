@@ -164,7 +164,7 @@ Comandos já definidos:
 | `neivi habit ls [all]` | lista os ativos com o feito no período (com `all`, os arquivados) |
 | `neivi habit edit <código> ...` | muda nome, meta, periodicidade, `sit:arquivado`, `code:novo` |
 | `neivi habit rm <código>` | remove, só sem registros |
-| `neivi help [comando]` | a lista de comandos, ou o formato e os símbolos de um comando |
+| `neivi help [comando]` | a lista de comandos, ou o formato e os símbolos de um comando; `neivi help pri` mostra o critério de prioridade (RN-15) |
 
 **Saída dos comandos de tarefa** (requisitos RNF-04 e RNF-05):
 

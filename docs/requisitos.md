@@ -585,6 +585,7 @@ Prioridade: Must · Fatia: 4 · Cenarios: C8 · Regras: RN-02, RN-17
       9                      ligar
       12     sex 13/11       pagar aluguel
 
+  No fim, depois de uma linha em branco: `criterio de prioridade: neivi help pri`.
 - **CA-08.2** *(caminho feliz, alternativa)* `neivi ls pri:-` mostra as mesmas tarefas (story do ls).
 - **CA-08.3** *(limite)* Dado a incompleta 4 concluida, entao ela nao aparece.
 - **CA-08.4** *(estado)* Dado que nao ha incompletas, entao aparece `nenhuma tarefa incompleta`.
@@ -983,7 +984,7 @@ Prioridade: Must · Fatia: 3 · Cenarios: C5 · Regras: RN-22, RN-23, RN-25
 
 ### US-22 · Lembrar o formato de um comando
 
-Prioridade: Should · Fatia: — (antes do corte) · Cenarios: C2, C5 · Regras: —
+Prioridade: Should · Fatia: — (antes do corte) · Cenarios: C2, C5, C8 · Regras: RN-15
 
 **Como** eu, usando o neivi e sem lembrar uma marca (`due:`, `x2`, `sem:`...),
 **quero** ver o formato e os simbolos de um comando direto no terminal,
@@ -993,6 +994,8 @@ Prioridade: Should · Fatia: — (antes do corte) · Cenarios: C2, C5 · Regras:
 - **CA-22.1** *(caminho feliz)* `neivi help add` mostra o uso, as marcas com o significado e exemplos; o mesmo para todo comando da lista (add, today, triage, ls, show, edit, done, reopen, rm, subject, project, habit).
 - **CA-22.2** *(entrada invalida)* `neivi help xyz` mostra `erro: comando xyz desconhecido (ajuda existe para: add, done, ...)`.
 - **CA-22.3** *(caminho feliz)* `neivi help` (e `neivi` sozinho) mostra a lista de comandos e termina com `detalhes de um comando: neivi help <comando>`; um comando desconhecido mostra `erro: comando xyz desconhecido (veja os comandos no neivi help)`.
+
+- **CA-22.4** *(caminho feliz)* `neivi help pri` mostra o criterio de prioridade da RN-15 numa tabela: o nivel, a definicao e a pergunta-teste, mais como dar prioridade (`neivi edit <id> pri:B`).
 
 **Notas:** `neivi add -help` nao serve, porque no add e no edit tudo depois do comando eh a tarefa (`-help` viraria titulo). A dica "(ajuda: neivi help add)" no fim de cada erro ficou de fora para nao mudar o texto dos criterios ja aprovados; entra se fizer falta no uso.
 
@@ -1271,7 +1274,7 @@ Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos 
 | US-19 | CA-19.1 a CA-19.6 | `cmd/neivi`: TestHabit; `internal/habit`: TestWeekStart, TestPeriod, TestMissing, TestLabels; `internal/store`: TestHabitLogs (19.3, 19.5) |
 | US-20 | CA-20.1 a CA-20.4 | `cmd/neivi`: TestHabit; `internal/store`: TestHabitLogs |
 | US-21 | CA-21.1 a CA-21.6 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabit |
-| US-22 | CA-22.1 a CA-22.3 | `cmd/neivi`: TestHelp |
+| US-22 | CA-22.1 a CA-22.4 | `cmd/neivi`: TestHelp |
 
 Os criterios que dependem do dia da semana (semana de domingo a sabado, dias especificos) sao conferidos em `internal/habit` com datas fixas; os de ponta a ponta usam dias relativos a hoje.
 

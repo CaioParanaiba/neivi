@@ -481,11 +481,11 @@ func TestTriage(t *testing.T) {
 		{"CA-08.1 so incompletas, mais antigas primeiro",
 			[][]string{{"add", "comprar", "cabo", "HDMI"}, {"add", "pronta", "pri:B"}, {"add", "ligar"}},
 			[]string{"triage"},
-			"incompletas (2)\nID  P  PRAZO  EST  TAREFA\n1                  comprar cabo HDMI\n3                  ligar", ""},
+			"incompletas (2)\nID  P  PRAZO  EST  TAREFA\n1                  comprar cabo HDMI\n3                  ligar\n\ncriterio de prioridade: neivi help pri", ""},
 		{"CA-08.3 concluida nao aparece",
 			[][]string{{"add", "comprar", "cabo"}, {"add", "ligar"}, {"done", "1"}},
 			[]string{"triage"},
-			"incompletas (1)\nID  P  PRAZO  EST  TAREFA\n2                  ligar", ""},
+			"incompletas (1)\nID  P  PRAZO  EST  TAREFA\n2                  ligar\n\ncriterio de prioridade: neivi help pri", ""},
 		{"CA-08.4 nenhuma", [][]string{{"add", "pronta", "pri:A"}}, []string{"triage"},
 			"nenhuma tarefa incompleta", ""},
 		{"CA-08.5 argumento", nil, []string{"triage", "xyz"},
@@ -1051,9 +1051,10 @@ func TestHelp(t *testing.T) {
 			"add": "pri:A", "edit": "pri:-", "done": "ontem", "reopen": "reopen 5", "rm": "[s/N]",
 			"today": "atrasadas", "triage": "ls pri:-", "ls": "busca no titulo", "show": "todos os campos",
 			"subject": "sit:ativa|encerrada", "project": "gh:usuario/repo", "habit": "x2",
+			"pri": "pergunta-teste",
 		} {
 			out, _, code := c.run("", "help", cmd)
-			if code != 0 || !strings.HasPrefix(out, "uso: neivi "+cmd) || !strings.Contains(out, want) {
+			if code != 0 || (cmd != "pri" && !strings.HasPrefix(out, "uso: neivi "+cmd)) || !strings.Contains(out, want) {
 				t.Errorf("neivi help %s:\n%s", cmd, out)
 			}
 		}

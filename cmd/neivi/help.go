@@ -82,6 +82,17 @@ exemplos:
   neivi ls @BD pri:A
   neivi ls +mrt hull`,
 
+	"pri": `prioridade mede a importancia; a urgencia eh o prazo (due:)
+
+     definicao                               pergunta-teste
+  A  consequencia seria ou com outra pessoa  se eu atrasar, perco nota, dinheiro ou prejudico alguem?
+  B  consequencia real, mas recuperavel      se eu atrasar, eu sofro, mas consigo recuperar?
+  C  seria bom, sem consequencia seria       ninguem sofre se atrasar, mas quero fazer?
+  D  talvez um dia                           se ficar 3 meses parado, tudo bem?
+  -  ainda nao decidida (incompleta)
+
+dar prioridade: neivi edit <id> pri:B        ver as incompletas: neivi triage`,
+
 	"show": `uso: neivi show <id>
 
   todos os campos de uma tarefa, a situacao e a descricao inteira`,

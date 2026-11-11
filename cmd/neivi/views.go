@@ -290,6 +290,8 @@ func runTriage(db *sql.DB, args []string) {
 
 	fmt.Printf("incompletas (%d)\n", len(lista))
 	printTasks(lista, false, false, time.Now())
+	fmt.Println()
+	fmt.Println("criterio de prioridade: neivi help pri")
 }
 
 // daysLabel diz quanto falta para o prazo: hoje, amanha, em N dias, atrasada ha N dias
