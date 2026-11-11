@@ -1,6 +1,6 @@
 # Requisitos do Neivi
 
-Cobre: v0.1 · Versao do doc: 0.4 · 2026-11-09
+Cobre: v0.1 · Versao do doc: 0.5 · 2026-11-11
 
 | Versao    | data          | Mudanca                   |
 |-----------|---------------|---------------------------|
@@ -8,6 +8,7 @@ Cobre: v0.1 · Versao do doc: 0.4 · 2026-11-09
 | 0.2       | 2026-11-09    | Contexto 2.1 e decisoes (secao 8) |
 | 0.3       | 2026-11-09    | Contexto completo (2.2 e 2.3) |
 | 0.4       | 2026-11-09    | Revisao contra o SPEC: escopo, glossario e decisoes D-22 a D-32; 1 e 2 fechados |
+| 0.5       | 2026-11-11    | Fatia 1 (tarefas) fechada: US-01 a US-06, RN-01 a RN-15, RNF-01 a RNF-05, modelo conceitual, D-33 e rastreabilidade |
 
 # 1. Introducao
 
