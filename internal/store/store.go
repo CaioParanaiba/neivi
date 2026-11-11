@@ -10,8 +10,6 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"github.com/CaioParanaiba/neivi/internal/project"
-	"github.com/CaioParanaiba/neivi/internal/subject"
 	"github.com/CaioParanaiba/neivi/internal/task"
 )
 
@@ -25,16 +23,20 @@ type scanner interface {
 	Scan(dest ...any) error
 }
 
+// A disciplina da tarefa eh a efetiva (RN-14): a dela, senao a do projeto.
+// Por isso o join com projects vem antes, e o de subjects usa o COALESCE.
+// tasks.subject_id continua sendo so a propria (eh o que o edit grava).
 const selectTasks = `SELECT tasks.id, tasks.title, COALESCE(tasks.description, ''),
         COALESCE(tasks.priority, ''), COALESCE(tasks.due, ''),
         COALESCE(tasks.estimate_min, 0), COALESCE(tasks.subject_id, 0),
         COALESCE(tasks.project_id, 0), COALESCE(tasks.done_at, ''),
         tasks.created_at, COALESCE(subjects.code, ''),
         COALESCE(projects.code, ''), COALESCE(subjects.name, ''),
-        COALESCE(projects.name, '')
+        COALESCE(projects.name, ''),
+        (tasks.subject_id IS NULL AND projects.subject_id IS NOT NULL)
         FROM tasks
-        LEFT JOIN subjects ON subjects.id = tasks.subject_id
-        LEFT JOIN projects ON projects.id = tasks.project_id`
+        LEFT JOIN projects ON projects.id = tasks.project_id
+        LEFT JOIN subjects ON subjects.id = COALESCE(tasks.subject_id, projects.subject_id)`
 
 func scanTask(s scanner) (task.Task, error) {
 	var v task.Task
@@ -43,7 +45,8 @@ func scanTask(s scanner) (task.Task, error) {
 		&v.SubjectID, &v.ProjectID,
 		&v.DoneAt, &v.CreatedAt,
 		&v.SubjectCode, &v.ProjectCode,
-		&v.SubjectName, &v.ProjectName)
+		&v.SubjectName, &v.ProjectName,
+		&v.SubjectInherited)
 	return v, err
 }
 
@@ -172,102 +175,6 @@ func ProjectIDByCode(db *sql.DB, code string) (int64, error) {
 	return id, nil
 }
 
-// AddSubject cadastra uma disciplina e devolve o id criado.
-// O code precisa ser único; repetido devolve erro.
-func AddSubject(db *sql.DB, code string, name string) (int64, error) {
-	res, err := db.Exec("INSERT INTO subjects (code,name) VALUES (?,?)", code, name)
-
-	if err != nil {
-		return 0, fmt.Errorf("inserir disciplina: %w", err)
-	}
-
-	id, err := res.LastInsertId()
-
-	if err != nil {
-		return 0, fmt.Errorf("retornar id: %w", err)
-	}
-
-	return id, nil
-}
-
-// ListSubjects devolve todas as disciplinas, na ordem de cadastro.
-func ListSubjects(db *sql.DB) ([]subject.Subject, error) {
-	rows, err := db.Query("SELECT id, code, name FROM subjects ORDER BY id")
-
-	if err != nil {
-		return nil, fmt.Errorf("listar disciplinas: %w", err)
-	}
-
-	defer rows.Close()
-
-	var lista []subject.Subject
-	for rows.Next() {
-		var v subject.Subject
-
-		err := rows.Scan(&v.ID, &v.Code, &v.Name)
-		if err != nil {
-			return nil, fmt.Errorf("ler disciplina: %w", err)
-		}
-
-		lista = append(lista, v)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return nil, fmt.Errorf("percorrer disciplinas: %w", err)
-	}
-
-	return lista, nil
-}
-
-// AddProject cadastra um projeto e devolve o id criado.
-// O code precisa ser único; repetido devolve erro.
-func AddProject(db *sql.DB, code string, name string) (int64, error) {
-	res, err := db.Exec("INSERT INTO projects (code,name) VALUES (?,?)", code, name)
-
-	if err != nil {
-		return 0, fmt.Errorf("inserir projeto: %w", err)
-	}
-
-	id, err := res.LastInsertId()
-
-	if err != nil {
-		return 0, fmt.Errorf("retornar id: %w", err)
-	}
-
-	return id, nil
-}
-
-// ListProjects devolve todos os projetos, na ordem de cadastro.
-func ListProjects(db *sql.DB) ([]project.Project, error) {
-	rows, err := db.Query("SELECT id, code, name FROM projects ORDER BY id")
-
-	if err != nil {
-		return nil, fmt.Errorf("listar projetos: %w", err)
-	}
-
-	defer rows.Close()
-
-	var lista []project.Project
-	for rows.Next() {
-		var v project.Project
-
-		err := rows.Scan(&v.ID, &v.Code, &v.Name)
-		if err != nil {
-			return nil, fmt.Errorf("ler projeto: %w", err)
-		}
-
-		lista = append(lista, v)
-	}
-
-	err = rows.Err()
-	if err != nil {
-		return nil, fmt.Errorf("percorrer projeto: %w", err)
-	}
-
-	return lista, nil
-}
-
 // adiquirir a tarefa pelo id
 func GetTask(db *sql.DB, id int64) (task.Task, error) {
 	v, err := scanTask(db.QueryRow(selectTasks+" WHERE tasks.id = ?", id))
@@ -376,17 +283,17 @@ func ListTasksFilter(db *sql.DB, f task.Filter) ([]task.Task, error) {
 		where = append(where, "tasks.done_at IS NULL")
 	}
 
-	// disciplina: @BD, @ e @- do mesmo tipo viram um grupo com OR
+	// disciplina (a efetiva, RN-14): @BD, @ e @- do mesmo tipo viram um grupo com OR
 	var subj []string
 	for _, code := range f.Subjects {
 		subj = append(subj, "subjects.code = ?")
 		args = append(args, code)
 	}
 	if f.AnySubject {
-		subj = append(subj, "tasks.subject_id IS NOT NULL")
+		subj = append(subj, "COALESCE(tasks.subject_id, projects.subject_id) IS NOT NULL")
 	}
 	if f.NoSubject {
-		subj = append(subj, "tasks.subject_id IS NULL")
+		subj = append(subj, "COALESCE(tasks.subject_id, projects.subject_id) IS NULL")
 	}
 	if len(subj) > 0 {
 		where = append(where, orGroup(subj))

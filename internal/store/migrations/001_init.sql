@@ -1,13 +1,23 @@
+-- disciplina: @BD (RN-21: ativa ou encerrada)
 CREATE TABLE IF NOT EXISTS subjects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
-    name TEXT UNIQUE
+    name TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('active', 'closed')) DEFAULT ('active')
 );
 
+-- projeto: +neivi (D-06, D-36); tipo academico/pessoal eh deduzido do subject_id
 CREATE TABLE IF NOT EXISTS projects (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     code TEXT NOT NULL UNIQUE,
-    name TEXT UNIQUE
+    name TEXT NOT NULL,
+    description TEXT,
+    github TEXT,
+    dir TEXT,
+    status TEXT NOT NULL CHECK (status IN ('active', 'paused', 'done', 'canceled')) DEFAULT ('active'),
+    continuous INTEGER NOT NULL CHECK (continuous IN (0, 1)) DEFAULT (0),
+    subject_id INTEGER REFERENCES subjects(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
 );
 
 CREATE TABLE IF NOT EXISTS tasks (

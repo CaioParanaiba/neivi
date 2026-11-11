@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/CaioParanaiba/neivi/internal/project"
+	"github.com/CaioParanaiba/neivi/internal/subject"
 	"github.com/CaioParanaiba/neivi/internal/task"
 )
 
@@ -183,9 +185,9 @@ func TestSubjectIDByCode(t *testing.T) {
 func TestListTasksFilter(t *testing.T) {
 	db := openTest(t)
 
-	bd, _ := AddSubject(db, "BD", "BD")
-	ed, _ := AddSubject(db, "ED", "ED")
-	neivi, _ := AddProject(db, "neivi", "neivi")
+	bd, _ := AddSubject(db, subject.Subject{Code: "BD", Name: "BD"})
+	ed, _ := AddSubject(db, subject.Subject{Code: "ED", Name: "ED"})
+	neivi, _ := AddProject(db, project.Project{Code: "neivi", Name: "neivi"})
 
 	add := func(tk task.Task) int64 {
 		t.Helper()

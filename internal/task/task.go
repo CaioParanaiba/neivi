@@ -18,6 +18,9 @@ type Task struct {
 	ProjectCode string
 	SubjectName string
 	ProjectName string
+
+	// SubjectInherited: a disciplina veio do projeto, a tarefa nao tem @ proprio (RN-14)
+	SubjectInherited bool
 }
 
 // NormalizeTitle deixa o titulo pronto para comparar duplicadas (RN-01):
