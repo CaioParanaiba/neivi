@@ -32,19 +32,19 @@ func parse(args []string, today time.Time) (Entry, error) {
 		switch v[0] {
 		case '@':
 			if t.SubjectCode != "" {
-				return Entry{}, fmt.Errorf("multiplas disciplinas")
+				return Entry{}, fmt.Errorf("mais de uma disciplina (@%s e %s)", t.SubjectCode, v)
 			}
 			if len(v) == 1 {
-				return Entry{}, fmt.Errorf("disciplina vazia")
+				return Entry{}, fmt.Errorf("disciplina vazia (use @codigo, ex.: @BD)")
 			}
 
 			t.SubjectCode = v[1:]
 		case '+':
 			if t.ProjectCode != "" {
-				return Entry{}, fmt.Errorf("multiplos projetos")
+				return Entry{}, fmt.Errorf("mais de um projeto (+%s e %s)", t.ProjectCode, v)
 			}
 			if len(v) == 1 {
-				return Entry{}, fmt.Errorf("projeto vazio")
+				return Entry{}, fmt.Errorf("projeto vazio (use +codigo, ex.: +neivi)")
 			}
 
 			t.ProjectCode = v[1:]
@@ -54,20 +54,20 @@ func parse(args []string, today time.Time) (Entry, error) {
 				switch key {
 				case "pri":
 					if t.Priority != "" {
-						return Entry{}, fmt.Errorf("multiplas prioridades")
+						return Entry{}, fmt.Errorf("mais de uma prioridade (pri:%s e %s)", t.Priority, v)
 					}
 					if value == "" {
-						return Entry{}, fmt.Errorf("prioridade vazia")
+						return Entry{}, fmt.Errorf("prioridade vazia (use A, B, C ou D)")
 					}
 					p := strings.ToUpper(value)
 					if len(value) > 1 || (p != "A" && p != "B" && p != "C" && p != "D" && p != "-") {
-						return Entry{}, fmt.Errorf("prioridade %s invalida", value)
+						return Entry{}, fmt.Errorf("prioridade %s invalida (use A, B, C ou D)", value)
 					}
 
 					t.Priority = p
 				case "est":
 					if t.EstimateMin != 0 {
-						return Entry{}, fmt.Errorf("multiplas estimativas")
+						return Entry{}, fmt.Errorf("mais de uma estimativa (est:%d e %s)", t.EstimateMin, v)
 					}
 
 					var est int64
@@ -77,7 +77,7 @@ func parse(args []string, today time.Time) (Entry, error) {
 					} else {
 						est, err = estTime(value)
 						if err != nil {
-							return Entry{}, fmt.Errorf("tempo invalido: %w", err)
+							return Entry{}, fmt.Errorf("estimativa %s invalida (use 30m, 1h, 1h15 ou 90)", value)
 						}
 					}
 
@@ -85,14 +85,14 @@ func parse(args []string, today time.Time) (Entry, error) {
 				case "due":
 					var day string
 					if t.Due != "" {
-						return Entry{}, fmt.Errorf("multiplas prazos")
+						return Entry{}, fmt.Errorf("mais de um prazo (due:%s e %s)", t.Due, v)
 					}
 					if value == "-" {
 						day = "-"
 					} else {
 						day, err = dueDate(value, today)
 						if err != nil {
-							return Entry{}, fmt.Errorf("data: %w", err)
+							return Entry{}, err
 						}
 					}
 
@@ -126,7 +126,7 @@ func ParseTask(args []string, today time.Time) (Entry, error) {
 	}
 	//opcionais, verificar "-" e -1 (de remocao)
 	if t.hasClear() {
-		return Entry{}, fmt.Errorf(`"-" so vale no edit`)
+		return Entry{}, fmt.Errorf(`"-" so vale no edit (para apagar um campo: neivi edit 1 due:-)`)
 	}
 
 	return t, nil
@@ -140,11 +140,11 @@ func ParseEdit(args []string, today time.Time) (Entry, error) {
 
 	//titulo nao remove
 	if t.Title == "-" {
-		return Entry{}, fmt.Errorf("titulo nao pode ser removido")
+		return Entry{}, fmt.Errorf("o titulo nao pode ser apagado, so trocado (exemplo: neivi edit 1 novo titulo)")
 	}
 
 	if t.isEmpty() {
-		return Entry{}, fmt.Errorf("edicao vazia")
+		return Entry{}, fmt.Errorf("nada para mudar (exemplo: pri:B due:sex)")
 	}
 
 	return t, nil
@@ -244,7 +244,7 @@ func dueDate(d string, today time.Time) (string, error) {
 			if err != nil {
 				parsed, err = time.ParseInLocation("2/1/2006", d, today.Location())
 				if err != nil {
-					return "", fmt.Errorf("data %s invalida", d)
+					return "", fmt.Errorf("data %s invalida (use dd/mm, dd/mm/aa, hoje, amanha ou seg...dom)", d)
 				}
 			}
 			return parsed.Format(isoDate), nil
@@ -252,7 +252,7 @@ func dueDate(d string, today time.Time) (string, error) {
 			//sem ano
 			parsed, err := time.ParseInLocation("2/1", d, today.Location())
 			if err != nil {
-				return "", fmt.Errorf("data %s invalida", d)
+				return "", fmt.Errorf("data %s invalida (use dd/mm, dd/mm/aa, hoje, amanha ou seg...dom)", d)
 			}
 
 			// o Parse devolve o ano 0: usa este ano, ou o próximo se o dia já passou.
@@ -265,12 +265,12 @@ func dueDate(d string, today time.Time) (string, error) {
 			next := time.Date(year, parsed.Month(), parsed.Day(), 0, 0, 0, 0, today.Location())
 			if next.Day() != parsed.Day() {
 				// só acontece com 29/02 em ano que não é bissexto
-				return "", fmt.Errorf("data %s nao existe em %d", d, year)
+				return "", fmt.Errorf("%s nao existe em %d", d, year)
 			}
 			return next.Format(isoDate), nil
 		} else {
 			//erro
-			return "", fmt.Errorf("data %s invalida", d)
+			return "", fmt.Errorf("data %s invalida (use dd/mm, dd/mm/aa, hoje, amanha ou seg...dom)", d)
 		}
 
 	}
