@@ -246,6 +246,12 @@ Um estudante de ciencia da computacao, que faz maratona de programacao juntament
 | US-14 | Mudar um projeto | Must | 2 | C9 | testada |
 | US-15 | Cadastrar, ver e encerrar disciplinas | Must | 2 | C3, C7 | testada |
 | US-16 | Remover uma disciplina ou um projeto criado por engano | Should | 2 | — | testada |
+| US-17 | Cadastrar um habito | Must | 3 | C5, C11 | testada |
+| US-18 | Registrar habitos feitos | Must | 3 | C5, C11 | testada |
+| US-19 | Ver os habitos | Must | 3 | C5, C11, C1 | testada |
+| US-20 | Corrigir um registro de habito | Must | 3 | C5 | testada |
+| US-21 | Mudar, arquivar ou remover um habito | Must | 3 | C5 | testada |
+| US-22 | Lembrar o formato de um comando | Should | — | C2, C5 | testada |
 
 Prioridade: Must (sem ela o v0.1 nao fica pronto, D-22), Should (importante, mas da para viver sem), Could (se sobrar tempo).
 Status: - (nao escrita), rascunho, pronta, testada.
@@ -557,7 +563,7 @@ Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
 - **CA-07.9** *(entrada invalida)* Quando registro `neivi today xyz`,
   entao aparece `erro: today nao recebe argumentos (exemplo: neivi today)`.
 
-**Notas:** o contador aparece sempre, mesmo `hoje: 0 concluidas`. Os habitos do dia entram abaixo na fatia 3.
+**Notas:** o contador aparece sempre, mesmo `hoje: 0 concluidas`. Os habitos que faltam hoje aparecem no fim (US-19, CA-19.1).
 
 ---
 
@@ -828,6 +834,170 @@ Prioridade: Should · Fatia: 2 · Cenarios: — · Regras: RN-22
 
 ---
 
+## Fatia 3 · Habitos
+
+---
+
+### US-17 · Cadastrar um habito
+
+Prioridade: Must · Fatia: 3 · Cenarios: C5, C11 · Regras: RN-23, RN-25
+
+**Como** eu, quando quero comecar (ou passar para o neivi) um habito,
+**quero** cadastrar o habito numa linha so, com um codigo curto, a meta e quando ele vale,
+**para** acompanhar cada habito do jeito que ele eh (todo dia, alguns dias ou N por semana).
+
+**Criterios de aceitacao**
+- **CA-17.1** *(caminho feliz)* Cada um cria o habito ativo e mostra a confirmacao:
+
+  | Entrada                                            | Confirmacao |
+  |----------------------------------------------------|-------------|
+  | `neivi habit add digi Treino de digitacao`         | `+ 1 · digi · Treino de digitacao · todo dia` |
+  | `neivi habit add cf Codeforces 3 questoes meta:3`  | `+ 2 · cf · Codeforces 3 questoes · 3 todo dia` |
+  | `neivi habit add lixo Descer o lixo sem:3`         | `+ 3 · lixo · Descer o lixo · 3 por semana` |
+  | `neivi habit add ingles Aula de ingles dias:seg,qua,sex` | `+ 4 · ingles · Aula de ingles · seg, qua, sex` |
+
+- **CA-17.2** *(limite)* Sem `meta:` a meta eh 1 (feito ou nao feito, D-02); sem nome, o nome eh o codigo.
+- **CA-17.3** *(entrada invalida)* Nada eh criado:
+
+  | Entrada                            | Mensagem |
+  |------------------------------------|----------|
+  | `neivi habit add`                  | `erro: falta o codigo do habito (exemplo: neivi habit add digi Treino de digitacao)` |
+  | `neivi habit add 3 x`              | `erro: o codigo 3 nao pode ser so um numero (ele se confundiria com o id)` |
+  | `neivi habit add x2`               | `erro: o codigo x2 nao pode ser x seguido de numero (ele se confundiria com a quantidade)` |
+  | `neivi habit add cf` (ja existe)   | `erro: ja existe um habito cf (para mudar: neivi habit edit cf)` |
+  | `neivi habit add x sem:3 dias:seg` | `erro: use sem: ou dias:, nao os dois` |
+  | `neivi habit add x sem:3 meta:2`   | `erro: no sem: o numero ja eh a meta da semana (use so sem:3)` |
+  | `neivi habit add x meta:0`         | `erro: meta 0 invalida (use um numero maior que zero)` |
+  | `neivi habit add x dias:seg,xyz`   | `erro: dia xyz invalido (use dom, seg, ter, qua, qui, sex, sab)` |
+
+---
+
+### US-18 · Registrar habitos feitos
+
+Prioridade: Must · Fatia: 3 · Cenarios: C5, C11 · Regras: RN-11, RN-12, RN-23, RN-24, RN-25
+
+**Como** eu, logo depois de fazer, ou na proxima vez que uso o computador (as vezes no fim do dia ou no dia seguinte),
+**quero** marcar varios habitos de uma vez, pelo codigo ou pelo id, com a quantidade quando for o caso,
+**para** registrar rapido o que fiz sem perder o que ja foi feito e ver o que ainda falta hoje.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026; os habitos da US-17, mais neivi e soneca todo dia; cf ja com 0 hoje, lixo com 1 na semana, ingles ja feito hoje)
+- **CA-18.1** *(caminho feliz)* `neivi habit do cf x2 lixo neivi` mostra:
+
+      ✓ cf · 2/3 hoje
+      ✓ lixo · 2/3 nesta semana
+      ✓ neivi · feito hoje
+      faltam hoje: digi, cf (1), lixo (1), soneca
+
+  (o lixo ainda falta: semanal aparece ate bater a meta da semana, RN-23; ordem pelo id)
+
+- **CA-18.2** *(caminho feliz, id)* `neivi habit do 1` marca o digi, igual a `neivi habit do digi`.
+- **CA-18.3** *(caminho feliz, ontem)* `neivi habit do lixo neivi ontem` marca os dois em 10/11, com `(ontem)` em cada linha; o `ontem` vale para todos do comando (RN-24).
+- **CA-18.4** *(limite, passar da meta)* Com cf em 3/3, `neivi habit do cf x2` mostra `✓ cf · 5/3 hoje` (D-12).
+- **CA-18.5** *(limite, tudo feito)* Quando nao falta nada, a ultima linha eh `habitos: tudo feito hoje ✓`.
+- **CA-18.6** *(estado)* Numa terca, `neivi habit do ingles` marca e avisa `aviso: ingles nao eh de terca`.
+- **CA-18.7** *(estado)* Habito arquivado marca e avisa `aviso: o habito digi esta arquivado (reativar: neivi habit edit digi sit:ativo)`.
+- **CA-18.8** *(entrada invalida)* (RN-12):
+
+  | Entrada                     | Resultado |
+  |-----------------------------|-----------|
+  | `neivi habit do cf 99`      | marca o cf e mostra `aviso: habito 99 nao existe (veja os habitos no neivi habit ls)` |
+  | `neivi habit do cf liixo`   | nada eh marcado; `erro: "liixo" nao eh um habito, quantidade (x2) nem "ontem" (veja os habitos no neivi habit ls)` |
+  | `neivi habit do x2 cf`      | nada eh marcado; `erro: x2 precisa vir depois de um habito (exemplo: neivi habit do cf x2)` |
+  | `neivi habit do cf x0`      | nada eh marcado; `erro: quantidade x0 invalida (use x1, x2...)` |
+  | `neivi habit do`            | `erro: falta o habito (exemplo: neivi habit do cf x2 lixo)` |
+
+---
+
+### US-19 · Ver os habitos
+
+Prioridade: Must · Fatia: 3 · Cenarios: C5, C11, C1 · Regras: RN-23
+
+**Como** eu, ao longo do dia (C5) e quando vejo o resumo (C1),
+**quero** ver os habitos que ainda faltam hoje, e quando quiser, todos com o que ja fiz,
+**para** nao esquecer nenhum sem precisar lembrar de cabeca.
+
+**Criterios de aceitacao** (hoje = qua 11/11/2026)
+- **CA-19.1** *(caminho feliz, no today)* Depois das tarefas, das linhas `falta:` e `hoje:`, e de uma linha em branco:
+
+      habitos (3)
+      ID  HABITO  FEITO
+      1   digi    0/1
+      2   cf      2/3
+      3   lixo    2/3 na semana
+
+  So os que faltam hoje (RN-23); com todos feitos, so `habitos: tudo feito hoje ✓`; sem nenhum habito cadastrado, nada aparece.
+- **CA-19.2** *(caminho feliz, todos)* `neivi habit ls` mostra todos os ativos, inclusive os ja feitos:
+
+      ID  HABITO  META            FEITO          NOME
+      1   digi    todo dia        0/1            Treino de digitacao
+      2   cf      3 todo dia      2/3            Codeforces 3 questoes
+      3   lixo    3 por semana    2/3 na semana  Descer o lixo
+      4   ingles  seg, qua, sex   ✓              Aula de ingles
+      5   neivi   todo dia        ✓              Brincar com a Neivi
+
+  Num dia que nao eh dele, um habito de dias especificos mostra `-` em FEITO.
+- **CA-19.3** *(limite, semana)* O "N por semana" conta de domingo a sabado (D-19): no domingo volta a 0/N; ate bater a meta, aparece todo dia no today.
+- **CA-19.4** *(limite, dias especificos)* So aparece no today nos seus dias.
+- **CA-19.5** *(caminho feliz, arquivados)* `neivi habit ls all` mostra tambem os arquivados, depois, com a coluna SITUACAO.
+- **CA-19.6** *(estado)* Sem habitos: `nenhum habito (cadastrar: neivi habit add codigo nome)`.
+
+---
+
+### US-20 · Corrigir um registro de habito
+
+Prioridade: Must · Fatia: 3 · Cenarios: C5 · Regras: RN-24
+
+**Como** eu, quando marquei um habito por engano ou a mais,
+**quero** desfazer o registro, todo ou so uma parte,
+**para** o historico mostrar o que fiz de verdade.
+
+**Criterios de aceitacao**
+- **CA-20.1** *(caminho feliz)* Com cf em 3 hoje, `neivi habit undo cf` mostra `↺ cf · 2/3 hoje`; `neivi habit undo cf x2` mostra `↺ cf · 1/3 hoje`; `ontem` desfaz no dia de ontem.
+- **CA-20.2** *(limite)* Nunca fica negativo: com cf em 1, `neivi habit undo cf x2` deixa 0 e avisa `aviso: cf so tinha 1 hoje`.
+- **CA-20.3** *(estado)* Sem registro no dia: `aviso: cf nao tem registro hoje`, nada muda.
+- **CA-20.4** *(entrada invalida)* As mesmas mensagens do `habit do` (RN-12).
+
+---
+
+### US-21 · Mudar, arquivar ou remover um habito
+
+Prioridade: Must · Fatia: 3 · Cenarios: C5 · Regras: RN-22, RN-23, RN-25
+
+**Como** eu, quando um habito muda (outra meta, outros dias) ou deixa de fazer sentido,
+**quero** mudar so o que preciso, arquivar quando parar, e apagar so o que criei por engano,
+**para** a lista mostrar so os habitos de agora sem perder o historico.
+
+**Criterios de aceitacao**
+- **CA-21.1** *(caminho feliz)* `neivi habit edit cf meta:5` mostra `~ 2 · cf · Codeforces 3 questoes · 5 todo dia`; texto solto troca o nome; `code:` troca o codigo; `sem:`/`dias:` trocam a periodicidade.
+- **CA-21.2** *(limite)* A meta e a periodicidade novas valem tambem para olhar o passado (o historico guarda so o que foi feito, nao a meta da epoca).
+- **CA-21.3** *(caminho feliz, arquivar)* `neivi habit edit digi sit:arquivado` mostra `~ 1 · digi · Treino de digitacao · arquivado`; ele some do today e do habit ls; `sit:ativo` traz de volta.
+- **CA-21.4** *(caminho feliz, remover)* `neivi habit rm x` (sem registros) pergunta `remover o habito x (sem registros)? [s/N]`; com `s`, `✗ x removido`.
+- **CA-21.5** *(estado)* `neivi habit rm cf` (com registros) recusa: `erro: o habito cf tem 12 registros (para parar sem perder o historico: neivi habit edit cf sit:arquivado)`.
+- **CA-21.6** *(entrada invalida)* As mesmas regras do cadastro (RN-25), mais `nada para mudar no habito cf (exemplo: neivi habit edit cf meta:5)`.
+
+---
+
+## Ajuda
+
+---
+
+### US-22 · Lembrar o formato de um comando
+
+Prioridade: Should · Fatia: — (antes do corte) · Cenarios: C2, C5 · Regras: —
+
+**Como** eu, usando o neivi e sem lembrar uma marca (`due:`, `x2`, `sem:`...),
+**quero** ver o formato e os simbolos de um comando direto no terminal,
+**para** nao precisar abrir o SPEC nem adivinhar.
+
+**Criterios de aceitacao**
+- **CA-22.1** *(caminho feliz)* `neivi help add` mostra o uso, as marcas com o significado e exemplos; o mesmo para todo comando da lista (add, today, triage, ls, show, edit, done, reopen, rm, subject, project, habit).
+- **CA-22.2** *(entrada invalida)* `neivi help xyz` mostra `erro: comando xyz desconhecido (ajuda existe para: add, done, ...)`.
+- **CA-22.3** *(caminho feliz)* `neivi help` (e `neivi` sozinho) mostra a lista de comandos e termina com `detalhes de um comando: neivi help <comando>`; um comando desconhecido mostra `erro: comando xyz desconhecido (veja os comandos no neivi help)`.
+
+**Notas:** `neivi add -help` nao serve, porque no add e no edit tudo depois do comando eh a tarefa (`-help` viraria titulo). A dica "(ajuda: neivi help add)" no fim de cada erro ficou de fora para nao mudar o texto dos criterios ja aprovados; entra se fizer falta no uso.
+
+---
+
 # 4. Regras de negocio
 
 Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte) e onde eh usada.
@@ -854,7 +1024,7 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
   Fonte: SPEC 4, D-11, CA-03.1 a CA-03.4 · Usada em: US-03
 - **RN-11** Data de conclusao: hoje, ou ontem quando escrevo `ontem`; nenhuma outra data no v0.1. Pode ser anterior a data de criacao. Concluir de novo uma tarefa concluida nao muda a data.
   Fonte: D-21 (mesma ideia dos habitos), CA-04.2, CA-04.3, CA-04.6 · Usada em: US-04
-- **RN-12** Comandos com varios ids: id que nao existe gera aviso e os outros seguem; palavra que nao eh id (nem `ontem`, no done) recusa tudo, porque nao da para saber o que eu quis dizer.
+- **RN-12** Comandos com varios ids: id que nao existe gera aviso e os outros seguem; palavra que nao eh id (nem `ontem`, no done) recusa tudo, porque nao da para saber o que eu quis dizer. Vale tambem no `habit do` e no `habit undo`: palavra que nao eh id, codigo de habito, quantidade (`x2`) nem `ontem` recusa tudo.
   Fonte: CA-04.4, CA-04.5, CA-05.4, CA-06.5 · Usada em: US-04, US-05, US-06
 - **RN-13** Remover apaga de vez: a tarefa sai das pendentes e do historico, sem estado de cancelada. Sempre pergunta, uma por tarefa, e so `s` confirma. Se a tarefa esta concluida, a pergunta avisa que ela sai do historico.
   Fonte: CA-06.1 a CA-06.4 · Usada em: US-06
@@ -888,6 +1058,13 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 - **RN-22** So da para remover disciplina ou projeto sem nada ligado (tarefas, e para disciplina, projetos); sempre com `[s/N]`. Com coisas ligadas, recusa e sugere encerrar ou cancelar.
   Fonte: FK (31/10), US-16 · Usada em: US-16
 
+- **RN-23** Periodicidade e meta do habito: todo dia (meta por dia, padrao 1), dias especificos (meta por dia, so nesses dias) ou N por semana (a meta eh N na semana, somando os registros; semana de domingo a sabado, D-19). Um habito "falta hoje" enquanto nao bateu a meta do periodo e, se for de dias especificos, so se hoje for um dos dias.
+  Fonte: D-02, D-08, D-12, D-19, US-17, US-19 · Usada em: US-17 a US-21
+- **RN-24** Registro de habito: soma a quantidade (padrao 1) no dia, hoje ou ontem (D-21); `ontem` vale para todos do comando; pode passar da meta (D-12); fora do dia ou arquivado, registra com aviso. O undo subtrai e nunca deixa negativo.
+  Fonte: D-12, D-21, US-18, US-20 · Usada em: US-18, US-20
+- **RN-25** Codigo do habito: unico, nunca so numero, nunca `x` seguido de numero. O habito pode ser apontado pelo id ou pelo codigo. Na quantidade, `x2` vale para o habito logo antes.
+  Fonte: US-17, US-18 · Usada em: US-17, US-18, US-20, US-21
+
 # 5. Requisitos nao funcionais
 
 - **RNF-01** Desempenho: todo comando de tarefa (`add`, `edit`, `done`, `reopen`, `rm`) e de consulta (`today`, `ls`, `triage`, `show`) responde em menos de 1 segundo com 10 000 tarefas no banco (5x o uso esperado de um ano, ~2000). As consultas leem so as pendentes quando der.
@@ -900,15 +1077,43 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
   Como verificar: os CAs de entrada invalida das stories. · Fonte: US-02 a US-06
 - **RNF-05** Usabilidade (confirmacao): depois de criar, editar, concluir, reabrir ou remover, o neivi mostra a tarefa numa linha curta: simbolo (`+` criar, `~` editar, `✓` concluir, `↺` reabrir, `✗` remover), id, prioridade, prazo (`dia dd/mm`, com o ano so quando nao eh o atual), EST, titulo, `@disciplina`, `+projeto` e `…` se tiver descricao. Campos vazios nao aparecem. O `done` termina com o contador do dia.
   A linha curta eh so para confirmacoes (uma tarefa). Listas (`today`, `ls`, `triage`) usam tabela: `ID P PRAZO EST TAREFA` (o `X` so no `ls all`), prazo como `qua 11/11`, colunas alinhadas.
+  Habitos: `✓ cf · 2/3 hoje` ao registrar, `↺` ao desfazer, e no fim `faltam hoje: ...` (ou `habitos: tudo feito hoje ✓`).
   Como verificar: os CAs de caminho feliz das stories. · Fonte: US-01 a US-06
 
 # 6. Casos de uso
 
-Nenhum na fatia 1 (as stories cobrem os fluxos). O primeiro sera a importacao do Ganbatte (fatia 5).
+## UC-01 · Importar o Ganbatte (uma vez so)
+
+Ator: eu · Quando: uma vez, no dia do corte (D-24, D-35) · Ferramenta: `neivi-privado/importar/importar.py` (fora do repositorio)
+
+**Pre-condicoes:** o Ganbatte parado (nao mexo mais nele); a limpeza das pendentes feita (`escolhas.txt`); o banco do neivi vazio.
+
+**Fluxo principal**
+1. Rodo `python3 importar.py` (modo de teste): ele le o `~/.todo` e mostra o relatorio, sem gravar nada.
+2. Confiro o relatorio: contagens, exemplos e avisos.
+3. Rodo `python3 importar.py --aplicar`: ele grava tudo numa transacao so.
+4. Confiro no neivi (`today`, `ls`, `project ls`, `subject ls`, `habit ls`).
+5. Rodo o backup (`neivi-backup`), que tambem envia a primeira copia ao GitHub (RNF-03).
+
+**O que entra (D-38)**
+- Disciplinas: as do `disciplinas.txt`, ativas, com o nome; a marca antiga `+fac.ED` vira `@ED1`.
+- Projetos: `mrt` (Maratona, continuo, com Geometria e Teoria dos numeros), `p1` (Visualizador ED, pessoal, ativo), `ganbatte` (cancelado). O projeto vem da cacada; sem cacada, do `+exp.` ou do `+mrt`.
+- Tarefas pendentes: as "manter" da limpeza, menos a #106; as tarefas de `p1` e `mrt` entram sem prazo; as "concluir" entram concluidas com a data de ontem.
+- Historico: o `done.txt` inteiro, com as datas originais.
+- Habitos: digi, neivi, lixo (3 por semana), soneca, cf (meta 3) e atc (sabado), com um registro por dia das linhas `rec:` do `done.txt`; o cf vem do `cf.json`.
+- Marcas: `+fac.X` -> `@X`; `(A)`/`pri:` -> prioridade; `due:` e `est:` -> campos; o resto vai para a descricao como "Ganbatte: ..." (D-31).
+- Ids: as pendentes primeiro (ids curtos), depois o historico.
+
+**O que nao entra:** as linhas de habito do dia como tarefas, as avaliacoes (v0.2), as cacadas como entidade, as conquistas e o resto do jogo, e nenhuma tarefa recorrente.
+
+**Fluxos alternativos**
+- 2a. O relatorio tem avisos (titulo mudou desde a limpeza, linha sumiu): decido cada um antes de aplicar.
+- 3a. O banco ja tem dados: o script recusa (importacao unica). Para refazer, apago o banco e rodo de novo.
+- 3b. Erro no meio: a transacao desfaz tudo e o banco fica vazio.
 
 # 7. Modelo conceitual
 
-Entidades e relacionamentos das fatias 1, 4 e 2 (sem tabelas nem colunas; isso eh o SPEC 8).
+Entidades e relacionamentos das fatias 1, 4, 2 e 3 (sem tabelas nem colunas; isso eh o SPEC 8).
 
 ```
     Disciplina 1 ─────── 0..N Tarefa
@@ -922,11 +1127,15 @@ Entidades e relacionamentos das fatias 1, 4 e 2 (sem tabelas nem colunas; isso e
 - **Disciplina:** codigo (o que vai depois do `@`), nome, situacao (ativa ou encerrada).
 - **Projeto:** codigo (o que vai depois do `+`), nome, descricao, link do GitHub, pasta local, situacao (ativo, pausado, concluido, cancelado), continuo (sim ou nao), data de criacao.
 
+- **Habito:** codigo, nome, meta, periodicidade (todo dia, dias especificos ou N por semana), situacao (ativo ou arquivado), data de criacao.
+- **Registro de habito:** dia e quantidade.
+
 Relacionamentos:
 - Tarefa **eh de** no maximo uma Disciplina (opcional); uma Disciplina tem varias Tarefas.
 - Tarefa **pertence a** no maximo um Projeto (opcional); um Projeto tem varias Tarefas.
 - Projeto **eh de** no maximo uma Disciplina (opcional, D-06); uma Disciplina tem varios Projetos.
 - Tarefa pode ter Disciplina e Projeto ao mesmo tempo, inclusive com uma Disciplina diferente da do Projeto (RN-14).
+- Habito **tem** varios Registros, no maximo um por dia (a quantidade do dia soma); habito nao se liga a projeto (D-05).
 
 Deduzido, nunca guardado (D-17):
 - tarefa incompleta (RN-02) e tarefa nova (D-11);
@@ -955,8 +1164,8 @@ Deduzido, nunca guardado (D-17):
 - **Q-14** Criterios de cada nivel de prioridade (A a D), para nem tudo ficar no A nem tudo vazio. -> resolvida na RN-15
 - **Q-15** Adicionar ou concluir tarefa em disciplina ou projeto inativo: o sistema bloqueia, avisa, ou eu so suponho que nao vou fazer? (ex-S-08) -> resolvida na RN-19
 - **Q-16** Disciplina precisa de situacao ou semestre, para saber quais sao as atuais? Hoje so o projeto tem situacao. (ex-S-08) -> resolvida na RN-21
-- **Q-17** Quais arquivos do Ganbatte importar: todo.txt, done.txt, disciplinas.txt, hunter/avaliacoes.txt, os .json do hunter? (DEP-01) -> parcial: no v0.1 so tarefas e disciplinas; o hunter fica para o v0.2 (D-23); o done.txt eh a Q-18
-- **Q-18** Importar o done.txt (historico antigo de tarefas concluidas)? *(em aberto, fatia de importacao)*
+- **Q-17** Quais arquivos do Ganbatte importar: todo.txt, done.txt, disciplinas.txt, hunter/avaliacoes.txt, os .json do hunter? (DEP-01) -> parcial: no v0.1 so tarefas e disciplinas; o hunter fica para o v0.2 (D-23); o done.txt eh a Q-18 -> resolvida na D-38
+- **Q-18** Importar o done.txt (historico antigo de tarefas concluidas)? -> resolvida na D-38 (entra inteiro)
 - **Q-19** Para onde vai a copia do backup: repositorio privado, HD externo (S-09) ou os dois? -> resolvida em D-33
 
 ### Decisoes
@@ -1057,6 +1266,14 @@ Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos 
 | US-16 | CA-16.1 a CA-16.3 | `cmd/neivi`: TestProject, TestSubject; `internal/store`: TestProjectsAndSubjects |
 | US-02, US-03 | CA-02.7, CA-03.8 | `cmd/neivi`: TestProject |
 | US-10 | CA-10.5 | `cmd/neivi`: TestProject; `internal/store`: TestProjectsAndSubjects |
+| US-17 | CA-17.1 a CA-17.3 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabit; `internal/habit`: TestLabels, TestValidCode, TestDays |
+| US-18 | CA-18.1 a CA-18.8 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabitRefs; `internal/habit`: TestLabels, TestMissing; `internal/store`: TestHabitLogs (18.1) |
+| US-19 | CA-19.1 a CA-19.6 | `cmd/neivi`: TestHabit; `internal/habit`: TestWeekStart, TestPeriod, TestMissing, TestLabels; `internal/store`: TestHabitLogs (19.3, 19.5) |
+| US-20 | CA-20.1 a CA-20.4 | `cmd/neivi`: TestHabit; `internal/store`: TestHabitLogs |
+| US-21 | CA-21.1 a CA-21.6 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabit |
+| US-22 | CA-22.1 a CA-22.3 | `cmd/neivi`: TestHelp |
+
+Os criterios que dependem do dia da semana (semana de domingo a sabado, dias especificos) sao conferidos em `internal/habit` com datas fixas; os de ponta a ponta usam dias relativos a hoje.
 
 Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por caso. Os criterios que dependem do dia de hoje (prazos com dia da semana) sao conferidos nas funcoes de formatacao e de data, com o "hoje" fixo em ter 10/11/2026, porque os comandos usam o relogio real.
 - **D-34** Nova ordem das fatias: 4 (listagem e resumo) -> 5 (importacao) -> corte das tarefas -> 2 (disciplinas e projetos) -> 3 (habitos) -> corte dos habitos e v0.1. O corte seco (D-24) vira duas etapas: depois da importacao, tarefas so no neivi e o Ganbatte fica ligado so para os habitos; depois da fatia 3, o Ganbatte eh desligado. Os numeros das fatias continuam os mesmos.
@@ -1065,3 +1282,7 @@ Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por
   Porque: as fatias 2 e 3 mexem no banco; feitas antes de existirem dados reais, o esquema muda direto no `001_init.sql`, sem migracao, e o corte eh um so, sem tarefas no neivi e habitos no Ganbatte ao mesmo tempo. No ritmo atual, isso atrasa o uso em poucas sessoes.
 - **D-36** O projeto ganha "continuo" (sim ou nao, padrao nao), e a disciplina ganha a situacao (ativa ou encerrada).
   Porque: o projeto continuo (como a maratona, D-01) nao tem fim, entao a porcentagem de progresso nao faz sentido nele; e as disciplinas antigas precisam sair da lista sem perder o historico.
+- **D-37** O habito tem um codigo (alem do id), um `undo` para corrigir registros e a situacao arquivado para parar.
+  Porque: com pressa eu lembro do codigo, e as vezes do id da lista; marcar errado acontece; e parar um habito nao pode apagar o historico.
+- **D-38** Importacao do Ganbatte: o mapeamento do UC-01 (disciplinas, os projetos mrt, p1 e ganbatte, as pendentes da limpeza sem prazo nos projetos pessoais, o done.txt inteiro, os habitos com o historico, o resto das marcas na descricao). Q-17 e Q-18 resolvidas.
+  Porque: a limpeza ja tirou o que nao serve; o historico e os habitos mantem a motivacao e as estatisticas; projeto pessoal sem prazo nao comeca o neivi com atrasadas.

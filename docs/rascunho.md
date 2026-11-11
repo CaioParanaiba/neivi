@@ -1,27 +1,21 @@
 # Rascunho
 
-## Fatia atual · 3 Habitos
-- Habito: ao bater a meta sai da visao do dia; excedente fica no historico (D-12)
-- Habito semanal: aparece no dia ate bater a meta da semana; dias especificos: so aparece nos seus dias
-- Habito pode ser registrado em hoje ou ontem (D-21)
-
-## Proximas fatias (ordem da D-35)
-
-### Fatia 5 · Importacao e backup
-- Chaves do Ganbatte vao para a descricao na importacao (D-31)
-- Q-17 (quais arquivos) e Q-18 (done.txt)
-
-- Depois da importacao: corte unico (desligar o Ganbatte; prompt das 5:50 neutro)
+## Fatia atual · corte e uso real
+- Uma semana de uso real; anotar aqui o que incomodar
 
 ## Ideias futuras
 
 - Editar varias tarefas de uma vez (ex.: adiar tudo de BD) (US-03)
 - Concluir com datas mais antigas que ontem, se for frequente (US-04)
 - Revisao semanal (C10): `neivi week` com as feitas na semana + o planejado nas proximas 2 semanas -> decidir depois do corte (US-09)
+- Revisao semanal da maratona (#106 do Ganbatte) volta quando houver recorrencia
 - Ritual mensal de backup (copiar para o HD + testar restauracao) eh um caso real de tarefa recorrente (D-16)
 
 - v0.2 (notas): ao registrar a nota final, oferecer encerrar a disciplina (US-15)
 - Chamar o projeto pelo id tambem (`project show 3`), so se fizer falta (US-13)
+
+- Compensar o dia de um habito de dias especificos (fiz na segunda, entao a terca nao precisa) (US-18)
+- Revisoes semanais (financeiro na sexta, estudos no domingo) como tarefas recorrentes, quando recorrencia entrar (D-16)
 
 ### TUI (futuro)
 - Visao do dia (C1): listagem rapida compacta com tarefas do dia por ordem de prioridade (com contexto de disciplina ou projeto)
@@ -32,6 +26,16 @@
 - (vazio)
 
 ---
+
+## Fatia 5 · Importacao (fechada em 2026-11-11)
+- ✓ Chaves do Ganbatte vao para a descricao na importacao (D-31) -> UC-01
+- ✓ Q-17 e Q-18 -> D-38 (done.txt inteiro entra)
+- ✓ Ganbatte desligado (ganbatte.service) em 2026-11-11
+
+## Fatia 3 · Habitos (fechada em 2026-11-11)
+- ✓ Habito: ao bater a meta sai da visao do dia; excedente fica no historico (D-12) -> RN-23, RN-24
+- ✓ Habito semanal e dias especificos -> RN-23
+- ✓ Habito pode ser registrado em hoje ou ontem (D-21) -> RN-24
 
 ## Fatia 2 · Disciplinas e projetos (fechada em 2026-11-11)
 - ✓ RN-14 (disciplina herdada do projeto) no `ls @`/`@BD` e no `show` (CA-10.5) -> codigo desta fatia

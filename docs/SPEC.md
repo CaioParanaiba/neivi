@@ -158,6 +158,13 @@ Comandos já definidos:
 | `neivi project show <código>` | panorama do projeto (C9) com as pendentes |
 | `neivi project edit <código> ...` | muda só o que aparece; `-` apaga; `code:novo` troca o código |
 | `neivi project rm <código>` | remove, só sem tarefas |
+| `neivi habit add <código> [nome] ...` | cadastra um hábito: `meta:3`, `sem:3` (3 por semana) ou `dias:seg,qua,sex` |
+| `neivi habit do <hábito>... [ontem]` | registra (código ou id; `x2` depois do hábito = quantidade) |
+| `neivi habit undo <hábito>... [ontem]` | desfaz um registro, sem deixar negativo |
+| `neivi habit ls [all]` | lista os ativos com o feito no período (com `all`, os arquivados) |
+| `neivi habit edit <código> ...` | muda nome, meta, periodicidade, `sit:arquivado`, `code:novo` |
+| `neivi habit rm <código>` | remove, só sem registros |
+| `neivi help [comando]` | a lista de comandos, ou o formato e os símbolos de um comando |
 
 **Saída dos comandos de tarefa** (requisitos RNF-04 e RNF-05):
 
@@ -300,13 +307,17 @@ tasks
   created_at TEXT (ISO), done_at TEXT NULL (ISO)
 
 habits
-  id, name, goal INTEGER NOT NULL DEFAULT 1,
-  freq_kind ('daily'|'times_per_week'|'weekdays'), freq_value TEXT,
-  created_at, archived BOOL
+  id, code UNIQUE, name, goal INTEGER NOT NULL DEFAULT 1,
+  freq_kind ('daily'|'times_per_week'|'weekdays'), freq_value TEXT NULL,
+  status ('active'|'archived'), created_at
   -- todo hábito tem meta numérica; feito/não feito é meta 1 (requisitos D-02)
+  -- goal: meta do dia (daily, weekdays) ou da semana (times_per_week)
+  -- freq_value: só no weekdays, os dias do time.Weekday ("1,3,5" = seg, qua, sex)
 
-habit_logs (habit_id, date DATE, value INTEGER)  -- PK(habit_id, date)
-  -- o valor real, mesmo acima da meta (D-12); a sequência sai daqui no futuro
+habit_logs (habit_id, date, value INTEGER > 0)  -- PK(habit_id, date)
+  -- um registro por dia; registrar de novo soma (INSERT ... ON CONFLICT DO UPDATE)
+  -- o valor real, mesmo acima da meta (D-12); o undo subtrai e apaga em zero
+  -- a sequência (streak) sai daqui no futuro (D-26)
 ```
 
 ## 9. Estrutura do repositório
