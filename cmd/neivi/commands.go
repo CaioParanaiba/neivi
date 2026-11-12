@@ -18,20 +18,20 @@ import (
 const help = `uso: neivi <comando> [argumentos]
 
 tarefas:
-  add <texto>                 adicionar tarefa
-  today                       o que tem para hoje (tarefas e habitos)
-  triage                      tarefas incompletas (sem prioridade)
-  ls [filtros] [palavras]     listar tarefas
-  show <id>                   ver todos os campos de uma tarefa
-  edit <id> <texto>           mudar so os campos do texto
-  done <id>... [ontem]        concluir tarefas
-  reopen <id>...              reabrir tarefas concluidas
-  rm <id>...                  remover tarefas (pede confirmacao)
+  add <texto>                     adicionar tarefa
+  today                           o que tem para hoje (tarefas e habitos)
+  triage                          tarefas incompletas (sem prioridade)
+  ls [filtros] [palavras]         listar tarefas
+  show <id>                       ver todos os campos de uma tarefa
+  edit <id> <texto>               mudar so os campos do texto
+  done <id>... [ontem]            concluir tarefas
+  reopen <id>...                  reabrir tarefas concluidas
+  rm <id>...                      remover tarefas (pede confirmacao)
 
 cadastros:
-  subject <add|ls|edit|rm>    disciplinas
-  project <add|ls|show|edit|rm>  projetos
-  habit <add|do|undo|ls|edit|rm> habitos
+  subject <add|ls|edit|rm>        disciplinas
+  project <add|ls|show|edit|rm>   projetos
+  habit <add|do|undo|ls|edit|rm>  habitos
 
 detalhes de um comando: neivi help <comando>   (ex.: neivi help add)
 `

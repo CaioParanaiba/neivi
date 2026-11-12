@@ -35,9 +35,15 @@ func (tb *table) fit(cells []string) {
 
 // line monta a linha com as colunas alinhadas; a ultima coluna nao tem espaco no fim
 func (tb *table) line(cells []string) string {
+	return tb.paintedLine(cells, cells)
+}
+
+// paintedLine eh o line com cor: escreve as celulas pintadas, mas o espaco vem
+// do texto puro (os codigos de cor nao ocupam lugar na tela)
+func (tb *table) paintedLine(cells, painted []string) string {
 	var b strings.Builder
 	for i, c := range cells {
-		b.WriteString(c)
+		b.WriteString(painted[i])
 		if i == len(cells)-1 {
 			break
 		}
@@ -97,19 +103,22 @@ func printTasks(ts []task.Task, withX bool, withDesc bool, today time.Time) {
 	var tb table
 	tb.fit(header(withX))
 
-	var rows [][]string
+	var rows, painted [][]string
 	for _, t := range ts {
 		r := row(t, withX, withDesc, today)
 		tb.fit(r)
 		rows = append(rows, r)
+		painted = append(painted, paintRow(r, withX))
 		if withDesc && t.Description != "" {
-			rows = append(rows, descRow(t, withX))
+			d := descRow(t, withX)
+			rows = append(rows, d)
+			painted = append(painted, d)
 		}
 	}
 
-	fmt.Println(tb.line(header(withX)))
-	for _, r := range rows {
-		fmt.Println(tb.line(r))
+	fmt.Println(paint(stDim, tb.line(header(withX))))
+	for i, r := range rows {
+		fmt.Println(tb.paintedLine(r, painted[i]))
 	}
 }
 
@@ -244,22 +253,25 @@ func runToday(db *sql.DB, args []string) {
 			}
 			first = false
 
-			fmt.Printf("%s (%d)\n", g.title, len(g.ts))
-			fmt.Println(tb.line(header(false)))
+			fmt.Println(paint(stSection, fmt.Sprintf("%s (%d)", g.title, len(g.ts))))
+			fmt.Println(paint(stDim, tb.line(header(false))))
 			for _, t := range g.ts {
-				fmt.Println(tb.line(row(t, false, false, now)))
+				r := row(t, false, false, now)
+				fmt.Println(tb.paintedLine(r, paintRow(r, false)))
 			}
 		}
 
 		fmt.Println()
+		var falta string
 		switch {
 		case est == 0:
-			fmt.Printf("falta: sem EST (%d tarefas)\n", shown)
+			falta = fmt.Sprintf("falta: sem EST (%d tarefas)", shown)
 		case noEst > 0:
-			fmt.Printf("falta: ~%s (%d sem EST)\n", formatEst(est), noEst)
+			falta = fmt.Sprintf("falta: ~%s (%d sem EST)", formatEst(est), noEst)
 		default:
-			fmt.Printf("falta: ~%s\n", formatEst(est))
+			falta = fmt.Sprintf("falta: ~%s", formatEst(est))
 		}
+		fmt.Println(paint(stFooter, falta))
 	}
 
 	n, err := store.CountDone(db, 0)
@@ -267,7 +279,7 @@ func runToday(db *sql.DB, args []string) {
 		fmt.Fprintln(os.Stderr, "erro:", err)
 		os.Exit(1)
 	}
-	fmt.Printf("hoje: %d concluidas\n", n)
+	fmt.Println(paint(stFooter, fmt.Sprintf("hoje: %d concluidas", n)))
 
 	printHabitsToday(db, now)
 }
@@ -288,10 +300,10 @@ func runTriage(db *sql.DB, args []string) {
 
 	task.SortByCreated(lista)
 
-	fmt.Printf("incompletas (%d)\n", len(lista))
+	fmt.Println(paint(stSection, fmt.Sprintf("incompletas (%d)", len(lista))))
 	printTasks(lista, false, false, time.Now())
 	fmt.Println()
-	fmt.Println("criterio de prioridade: neivi help pri")
+	fmt.Println(paint(stDim, "criterio de prioridade: neivi help pri"))
 }
 
 // daysLabel diz quanto falta para o prazo: hoje, amanha, em N dias, atrasada ha N dias
@@ -383,21 +395,25 @@ func runShow(db *sql.DB, args []string) {
 		situation = "incompleta"
 	}
 
-	fmt.Printf("tarefa %d · %s\n", t.ID, t.Title)
-	field := func(name, value string) {
-		fmt.Printf("  %-12s %s\n", name+":", value)
+	fmt.Println(paint(stSection, fmt.Sprintf("tarefa %d", t.ID)) + " · " + paint(stBold, t.Title))
+	// campo vazio ("-") fica apagado; os outros usam a cor do papel, como no today
+	field := func(name, value string, st style) {
+		if value == "-" {
+			st = stDim
+		}
+		fmt.Printf("  %s %s\n", paint(stDim, fmt.Sprintf("%-12s", name+":")), paint(st, value))
 	}
-	field("prioridade", dash(t.Priority))
-	field("prazo", due)
-	field("EST", dash(formatEst(t.EstimateMin)))
+	field("prioridade", dash(t.Priority), priStyle(t.Priority))
+	field("prazo", due, stDue)
+	field("EST", dash(formatEst(t.EstimateMin)), stEst)
 	disc := codeName(t.SubjectCode, t.SubjectName)
 	if t.SubjectInherited {
 		disc = t.SubjectCode + " (do projeto)" // RN-14
 	}
-	field("disciplina", disc)
-	field("projeto", codeName(t.ProjectCode, t.ProjectName))
-	field("criada", created)
-	field("situacao", situation)
+	field("disciplina", disc, stSubject)
+	field("projeto", codeName(t.ProjectCode, t.ProjectName), stProject)
+	field("criada", created, "")
+	field("situacao", situation, "")
 
 	if t.Description != "" {
 		fmt.Println()

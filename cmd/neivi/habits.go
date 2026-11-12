@@ -289,10 +289,10 @@ func printHabitsToday(db *sql.DB, today time.Time) {
 		fmt.Println("habitos: tudo feito hoje ✓")
 		return
 	}
-	fmt.Printf("habitos (%d)\n", len(rows))
-	fmt.Println(tb.line(head))
+	fmt.Println(paint(stSection, fmt.Sprintf("habitos (%d)", len(rows))))
+	fmt.Println(paint(stDim, tb.line(head)))
 	for _, r := range rows {
-		fmt.Println(tb.line(r))
+		fmt.Println(tb.paintedLine(r, []string{paint(stDim, r[0]), r[1], r[2]}))
 	}
 }
 

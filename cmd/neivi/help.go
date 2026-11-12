@@ -147,7 +147,7 @@ exemplos:
 // runHelp eh o neivi help [comando]
 func runHelp(args []string) {
 	if len(args) == 0 {
-		fmt.Print(help)
+		fmt.Print(paintHelp(help))
 		return
 	}
 
@@ -162,5 +162,5 @@ func runHelp(args []string) {
 		os.Exit(1)
 	}
 
-	fmt.Println(text)
+	fmt.Println(paintHelp(text))
 }
