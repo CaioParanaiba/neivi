@@ -199,8 +199,9 @@ func runToday(db *sql.DB, args []string) {
 	now := time.Now()
 	s := task.Today(pending, now)
 
-	if s.IsEmpty() {
+	if s.IsEmpty() && len(s.Tomorrow) == 0 {
 		fmt.Println("nada para hoje, bom trabalho!")
+		printHiddenLine(s)
 
 		incomplete := 0
 		for _, t := range pending {
@@ -216,14 +217,20 @@ func runToday(db *sql.DB, args []string) {
 		if !s.Important {
 			third = "sem prazo"
 		}
+		tomorrow := "amanha"
+		if now.Weekday() == time.Friday || now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
+			tomorrow = "ate segunda"
+		}
 
 		groups := []struct {
 			title string
 			ts    []task.Task
+			soma  bool // entra no falta: (o amanha nao entra)
 		}{
-			{"atrasadas", s.Late},
-			{"urgentes", s.Urgent},
-			{third, s.Third},
+			{"atrasadas", s.Late, true},
+			{"urgentes", s.Urgent, true},
+			{tomorrow, s.Tomorrow, false},
+			{third, s.Third, true},
 		}
 
 		// todas as linhas primeiro, para as larguras valerem para todos os grupos
@@ -234,6 +241,9 @@ func runToday(db *sql.DB, args []string) {
 		for _, g := range groups {
 			for _, t := range g.ts {
 				tb.fit(row(t, false, false, now))
+				if !g.soma {
+					continue
+				}
 				shown++
 				if t.EstimateMin > 0 {
 					est += t.EstimateMin
@@ -260,10 +270,13 @@ func runToday(db *sql.DB, args []string) {
 				fmt.Println(tb.paintedLine(r, paintRow(r, false)))
 			}
 		}
+		printHiddenLine(s)
 
 		fmt.Println()
 		var falta string
 		switch {
+		case shown == 0:
+			falta = "falta: nada para hoje" // so o bloco amanha apareceu
 		case est == 0:
 			falta = fmt.Sprintf("falta: sem EST (%d tarefas)", shown)
 		case noEst > 0:
@@ -282,6 +295,20 @@ func runToday(db *sql.DB, args []string) {
 	fmt.Println(paint(stFooter, fmt.Sprintf("hoje: %d concluidas", n)))
 
 	printHabitsToday(db, now)
+}
+
+// printHiddenLine eh a linha das sem prazo de projeto que ficaram fora do today:
+// "+ 7 de projetos (p1: 4, mrt: 2, neivi: 1) · neivi project show <codigo>"
+func printHiddenLine(s task.Summary) {
+	if len(s.Hidden) == 0 {
+		return
+	}
+	var parts []string
+	for _, c := range s.Hidden {
+		parts = append(parts, fmt.Sprintf("%s: %d", c.Code, c.N))
+	}
+	fmt.Println(paint(stDim, fmt.Sprintf("+ %d de projetos (%s) · neivi project show <codigo>",
+		s.HiddenTotal(), strings.Join(parts, ", "))))
 }
 
 func runTriage(db *sql.DB, args []string) {

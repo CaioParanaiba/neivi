@@ -16,17 +16,17 @@ import (
 
 func runHabit(db *sql.DB, args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "erro: falta o comando (exemplo: neivi habit do cf; ou add, undo, ls, edit, rm)")
-		os.Exit(1)
+		runHabitLs(db, nil) // grupo sozinho = ls
+		return
 	}
 
 	switch args[0] {
 	case "add":
 		runHabitAdd(db, args[1:])
-	case "do":
-		runHabitDo(db, args[1:], false)
+	case "do", "done": // done: o mesmo verbo da tarefa, para nao precisar decorar
+		runHabitDo(db, args[1:], false, false)
 	case "undo":
-		runHabitDo(db, args[1:], true)
+		runHabitDo(db, args[1:], true, false)
 	case "ls":
 		runHabitLs(db, args[1:])
 	case "edit":
@@ -34,9 +34,19 @@ func runHabit(db *sql.DB, args []string) {
 	case "rm":
 		runHabitRm(db, args[1:])
 	default:
-		fmt.Fprintf(os.Stderr, "erro: comando habit %s desconhecido (use add, do, undo, ls, edit ou rm)\n", args[0])
-		os.Exit(1)
+		// atalho: neivi habit digi = neivi habit do digi, sem marcar o que ja esta feito (RN-26)
+		runHabitDo(db, args, false, true)
 	}
+}
+
+// doneOn soma o que foi feito so naquele dia
+func doneOn(db *sql.DB, h habit.Habit, day time.Time) int {
+	d := day.Format("2006-01-02")
+	n, err := store.SumLogs(db, h.ID, d, d)
+	if err != nil {
+		fail(err)
+	}
+	return n
 }
 
 // doneIn soma o que foi feito no periodo da meta do habito (o dia, ou a semana)
@@ -113,7 +123,7 @@ func missingLine(db *sql.DB, today time.Time) string {
 	var missing []string
 	for _, h := range lista {
 		done := doneIn(db, h, today)
-		if !h.Missing(done, today) {
+		if !h.Missing(done, doneOn(db, h, today), today) {
 			continue
 		}
 		name := h.Code
@@ -129,8 +139,9 @@ func missingLine(db *sql.DB, today time.Time) string {
 	return "faltam hoje: " + strings.Join(missing, ", ")
 }
 
-// runHabitDo eh o habit do e, com undo = true, o habit undo (RN-24)
-func runHabitDo(db *sql.DB, args []string, undo bool) {
+// runHabitDo eh o habit do e, com undo = true, o habit undo (RN-24).
+// shortcut = veio do atalho neivi habit <codigo>: o que ja esta feito no dia so avisa
+func runHabitDo(db *sql.DB, args []string, undo bool, shortcut bool) {
 	cmd := "do"
 	if undo {
 		cmd = "undo"
@@ -161,6 +172,10 @@ func runHabitDo(db *sql.DB, args []string, undo bool) {
 	for _, r := range refs {
 		if r.Code != "" {
 			h, err := store.GetHabit(db, r.Code)
+			if errors.Is(err, sql.ErrNoRows) && shortcut && len(refs) == 1 {
+				fail(fmt.Errorf("habito %s nao existe (subcomandos: %s; veja os habitos no neivi habit ls)",
+					r.Code, strings.Join(habit.Reserved, ", ")))
+			}
 			if errors.Is(err, sql.ErrNoRows) {
 				fail(fmt.Errorf("%q nao eh um habito, quantidade (x2) nem \"ontem\" (veja os habitos no neivi habit ls)", r.Code))
 			}
@@ -197,6 +212,11 @@ func runHabitDo(db *sql.DB, args []string, undo bool) {
 			if had < t.qty {
 				fmt.Fprintf(os.Stderr, "aviso: %s so tinha %d %s\n", h.Code, had, when)
 			}
+			continue
+		}
+
+		if shortcut && h.DoneFor(doneIn(db, h, day), doneOn(db, h, day)) {
+			fmt.Fprintf(os.Stderr, "aviso: %s ja feito %s (para marcar de novo: neivi habit do %s)\n", h.Code, when, h.Code)
 			continue
 		}
 
@@ -276,7 +296,7 @@ func printHabitsToday(db *sql.DB, today time.Time) {
 	var rows [][]string
 	for _, h := range lista {
 		done := doneIn(db, h, today)
-		if !h.Missing(done, today) {
+		if !h.Missing(done, doneOn(db, h, today), today) {
 			continue
 		}
 		r := []string{strconv.FormatInt(h.ID, 10), h.Code, h.DoneLabel(done, today)}

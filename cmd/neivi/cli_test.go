@@ -1088,3 +1088,169 @@ func TestHelp(t *testing.T) {
 		}
 	})
 }
+
+// TestShortcuts cobre a triagem da semana de uso (18/11): atalhos, sinonimos e grupo sozinho (RN-26)
+func TestShortcuts(t *testing.T) {
+	prep := [][]string{
+		{"project", "add", "mrt", "Maratona", "cont:sim"},                    // 1
+		{"add", "Resolver", "convex", "hull", "+mrt", "pri:C", "est:1h30"},   // 1
+		{"add", "Estudar", "convex", "hull", "+mrt", "pri:C", "est:1h"},      // 2
+		{"add", "Implementar", "convex", "hull", "+mrt", "pri:C", "est:45m"}, // 3
+		{"habit", "add", "digi"},          // 1
+		{"habit", "add", "cf", "meta:3"},  // 2
+		{"habit", "add", "lixo", "sem:3"}, // 3
+	}
+
+	t.Run("project mrt, +mrt e 1 = project show mrt", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		want, _, _ := c.run("", "project", "show", "mrt")
+		for _, ref := range []string{"mrt", "+mrt", "1"} {
+			got, errOut, code := c.run("", "project", ref)
+			if code != 0 || got != want || errOut != "" {
+				t.Errorf("project %s:\n%s\n%s\nqueria:\n%s", ref, got, errOut, want)
+			}
+		}
+		got, _, _ := c.run("", "project", "show", "1")
+		if got != want {
+			t.Errorf("project show 1 diferente do show mrt:\n%s", got)
+		}
+		// a ficha segue a ordem de criacao dentro da prioridade (a EST nao separa)
+		if i, j, k := strings.Index(want, "Resolver"), strings.Index(want, "Estudar"), strings.Index(want, "Implementar"); !(i < j && j < k) {
+			t.Errorf("ficha fora da ordem do id:\n%s", want)
+		}
+	})
+
+	t.Run("grupo sozinho = ls", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		for _, g := range []string{"project", "habit", "subject"} {
+			want, _, _ := c.run("", g, "ls")
+			got, errOut, code := c.run("", g)
+			if code != 0 || got != want || errOut != "" {
+				t.Errorf("%s sozinho:\n%s\n%s\nqueria:\n%s", g, got, errOut, want)
+			}
+		}
+		want, _, _ := c.run("", "habit", "ls")
+		if got, _, _ := c.run("", "habits", "ls"); got != want {
+			t.Errorf("habits ls diferente de habit ls:\n%s", got)
+		}
+	})
+
+	runCases(t, prep, []cliCase{
+		{name: "RN-26 projeto que nao existe lista os subcomandos", in: []string{"project", "lss"},
+			wantErr: "erro: projeto lss nao existe (subcomandos: add, ls, show, edit, rm; veja os projetos no neivi project ls)"},
+		{name: "RN-26 codigo de projeto reservado", in: []string{"project", "add", "ls"},
+			wantErr: "erro: o codigo ls eh um comando do project (add, ls, show, edit, rm); escolha outro"},
+		{name: "RN-26 codigo de projeto numero", in: []string{"project", "add", "4"},
+			wantErr: "erro: o codigo 4 nao pode ser so um numero (ele se confundiria com o id)"},
+		{name: "RN-26 code: reservado no edit", in: []string{"project", "edit", "mrt", "code:show"},
+			wantErr: "erro: o codigo show eh um comando do project (add, ls, show, edit, rm); escolha outro"},
+		{name: "RN-26 codigo de habito reservado", in: []string{"habit", "add", "done"},
+			wantErr: "erro: o codigo done eh um comando do habit (add, do, done, undo, ls, edit, rm); escolha outro"},
+
+		{name: "RN-26 habit digi = habit do digi", in: []string{"habit", "digi"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo (3)"},
+		{name: "RN-26 habit pelo id", in: []string{"habit", "1"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo (3)"},
+		{name: "RN-26 habit done = habit do", in: []string{"habit", "done", "digi"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo (3)"},
+		{name: "RN-26 habito que nao existe lista os subcomandos", in: []string{"habit", "lss"},
+			wantErr: "erro: habito lss nao existe (subcomandos: add, do, done, undo, ls, edit, rm; veja os habitos no neivi habit ls)"},
+	})
+
+	t.Run("RN-26 atalho nao marca o que ja esta feito no dia", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		c.must("habit", "do", "digi", "lixo", "cf")
+
+		out, errOut, code := c.run("", "habit", "digi", "lixo", "cf")
+		wantOut := "✓ cf · 2/3 hoje\nfaltam hoje: cf (1)" // cf nao bateu a meta do dia: marca
+		wantErr := "aviso: digi ja feito hoje (para marcar de novo: neivi habit do digi)\n" +
+			"aviso: lixo ja feito hoje (para marcar de novo: neivi habit do lixo)"
+		if code != 0 {
+			t.Fatalf("codigo %d", code)
+		}
+		check(t, out, errOut, wantOut, wantErr)
+
+		// o habit do explicito continua marcando de novo
+		out, _, _ = c.run("", "habit", "do", "lixo")
+		if !strings.HasPrefix(out, "✓ lixo · 2/3 nesta semana") {
+			t.Errorf("habit do lixo: %s", out)
+		}
+	})
+
+	t.Run("RN-23 semanal feito hoje sai do today", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		c.must("habit", "do", "lixo")
+		out, _, _ := c.run("", "today")
+		if strings.Contains(out, "lixo") || !strings.Contains(out, "digi") {
+			t.Errorf("lixo feito hoje nao devia aparecer:\n%s", out)
+		}
+	})
+}
+
+// TestTodayTomorrow cobre os blocos novos do today (US-07 ajustada em 18/11)
+func TestTodayTomorrow(t *testing.T) {
+	label := "amanha"
+	if wd := time.Now().Weekday(); wd == time.Friday || wd == time.Saturday || wd == time.Sunday {
+		label = "ate segunda"
+	}
+
+	c := newCLI(t)
+	c.must("project", "add", "p1")
+	c.must("project", "add", "mrt")
+	c.must("add", "revisao", "em", "grupo", "pri:B", "due:amanha", "est:2h") // 1
+	c.must("add", "estudar", "POO", "pri:B", "est:30m")                      // 2
+	c.must("add", "lab", "1", "+p1", "pri:B")                                // 3
+	c.must("add", "lab", "2", "+p1", "pri:B")                                // 4
+	c.must("add", "hull", "+mrt", "pri:C")                                   // 5
+
+	var tb table
+	rows := [][]string{
+		header(false),
+		{"1", "B", dia(1), "2h", "revisao em grupo"},
+		{"2", "B", "", "30m", "estudar POO"},
+	}
+	for _, r := range rows {
+		tb.fit(r)
+	}
+	h := tb.line(header(false))
+	want := strings.Join([]string{
+		label + " (1)", h, tb.line(rows[1]), "",
+		"sem prazo (1)", h, tb.line(rows[2]),
+		"+ 3 de projetos (p1: 2, mrt: 1) · neivi project show <codigo>", "",
+		"falta: ~30m", // o amanha nao entra
+		"hoje: 0 concluidas",
+	}, "\n")
+
+	out, errOut, _ := c.run("", "today")
+	check(t, out, errOut, want, "")
+
+	t.Run("so amanha e projetos", func(t *testing.T) {
+		c.must("done", "2")
+		out, _, _ := c.run("", "today")
+		if !strings.Contains(out, label+" (1)") || !strings.Contains(out, "falta: nada para hoje") ||
+			!strings.Contains(out, "+ 3 de projetos") {
+			t.Errorf("queria o bloco %s, falta: nada para hoje e a linha dos projetos:\n%s", label, out)
+		}
+	})
+
+	t.Run("so projetos: dia livre com a linha", func(t *testing.T) {
+		c.must("done", "1")
+		out, _, _ := c.run("", "today")
+		want := "nada para hoje, bom trabalho!\n+ 3 de projetos (p1: 2, mrt: 1) · neivi project show <codigo>\nhoje: 2 concluidas"
+		if out != want {
+			t.Errorf("today:\n%s\nqueria:\n%s", out, want)
+		}
+	})
+}

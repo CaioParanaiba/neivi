@@ -95,8 +95,8 @@ func askYes(question string) bool {
 
 func runSubject(db *sql.DB, args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "erro: falta o comando (exemplo: neivi subject ls; ou add, edit, rm)")
-		os.Exit(1)
+		runSubjectLs(db, nil) // grupo sozinho = ls
+		return
 	}
 
 	switch args[0] {
@@ -263,8 +263,8 @@ func runSubjectRm(db *sql.DB, args []string) {
 
 func runProject(db *sql.DB, args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "erro: falta o comando (exemplo: neivi project ls; ou add, show, edit, rm)")
-		os.Exit(1)
+		runProjectLs(db, nil) // grupo sozinho = ls
+		return
 	}
 
 	switch args[0] {
@@ -279,8 +279,16 @@ func runProject(db *sql.DB, args []string) {
 	case "rm":
 		runProjectRm(db, args[1:])
 	default:
-		fmt.Fprintf(os.Stderr, "erro: comando project %s desconhecido (use add, ls, show, edit ou rm)\n", args[0])
-		os.Exit(1)
+		// atalho: neivi project mrt = neivi project show mrt (RN-26)
+		_, err := findProject(db, args[0])
+		if errors.Is(err, sql.ErrNoRows) {
+			fail(fmt.Errorf("projeto %s nao existe (subcomandos: %s; veja os projetos no neivi project ls)",
+				args[0], strings.Join(project.Reserved, ", ")))
+		}
+		if err != nil {
+			fail(err)
+		}
+		runProjectShow(db, args)
 	}
 }
 
@@ -394,13 +402,22 @@ func runProjectLs(db *sql.DB, args []string) {
 	}
 }
 
-// getProject busca pelo codigo e sai com a mensagem certa se nao existir
+// findProject busca pelo codigo, pelo +codigo ou pelo id
+func findProject(db *sql.DB, ref string) (project.Project, error) {
+	ref = strings.TrimPrefix(ref, "+")
+	if id, err := strconv.ParseInt(ref, 10, 64); err == nil {
+		return store.GetProjectByID(db, id)
+	}
+	return store.GetProject(db, ref)
+}
+
+// getProject busca o projeto e sai com a mensagem certa se nao existir
 func getProject(db *sql.DB, args []string, example string) project.Project {
 	if len(args) == 0 {
 		fail(fmt.Errorf("falta o codigo do projeto (exemplo: %s)", example))
 	}
 
-	p, err := store.GetProject(db, args[0])
+	p, err := findProject(db, args[0])
 	if errors.Is(err, sql.ErrNoRows) {
 		fail(fmt.Errorf("projeto %s nao cadastrado (cadastrar: neivi project add %s)", args[0], args[0]))
 	}
@@ -482,7 +499,7 @@ func runProjectShow(db *sql.DB, args []string) {
 		fmt.Println("nenhuma tarefa pendente")
 		return
 	}
-	task.SortDefault(pending)
+	task.SortPlan(pending)
 	fmt.Printf("pendentes (%d)\n", len(pending))
 	printTasks(pending, false, false, now)
 }

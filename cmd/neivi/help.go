@@ -16,6 +16,8 @@ var helps = map[string]string{
   est:1h15   estimativa (30m, 1h, 90)       -- txt   descricao (um segundo -- fecha)
 
   as marcas vao em qualquer posicao; palavra com : que nao eh marca fica no titulo
+  ; & | # ( ) > sao do shell e cortam o comando: use aspas ou troque por , ou -
+      neivi add "ler cap 3; fazer resumo"
 
 exemplos:
   neivi add comprar cabo HDMI
@@ -56,8 +58,11 @@ exemplo:
 
 	"today": `uso: neivi today
 
-  atrasadas, urgentes (prazo hoje) e importantes (A sem prazo; sem nenhuma, as sem prazo de maior prioridade),
-  o tempo estimado do que falta, o contador do dia e os habitos que faltam`,
+  atrasadas, urgentes (prazo hoje), amanha (na sex, sab e dom: ate segunda)
+  e importantes (A sem prazo; sem nenhuma, as sem prazo de maior prioridade)
+  sem prazo de projeto (menos as A) so contam na linha "+ N de projetos": ver no neivi project <codigo>
+  o tempo estimado do que falta hoje (o amanha nao entra), o contador do dia e os habitos que faltam
+  habito "N por semana" sai no dia em que foi feito e volta no dia seguinte`,
 
 	"triage": `uso: neivi triage
 
@@ -97,8 +102,9 @@ dar prioridade: neivi edit <id> pri:B        ver as incompletas: neivi triage`,
 
   todos os campos de uma tarefa, a situacao e a descricao inteira`,
 
-	"subject": `uso: neivi subject <add|ls|edit|rm> ...
+	"subject": `uso: neivi subject [add|ls|edit|rm] ...
 
+  neivi subject                          o mesmo que subject ls
   neivi subject add <codigo> [nome]
   neivi subject ls [all]                 all: tambem as encerradas
   neivi subject edit <codigo> ...        nome novo, sit:ativa|encerrada, code:novo
@@ -108,8 +114,10 @@ exemplos:
   neivi subject add BD Projeto de Banco de Dados
   neivi subject edit BD sit:encerrada`,
 
-	"project": `uso: neivi project <add|ls|show|edit|rm> ...
+	"project": `uso: neivi project [<codigo>|add|ls|show|edit|rm] ...
 
+  neivi project                          o mesmo que project ls
+  neivi project <codigo>                 o mesmo que project show (codigo, +codigo ou id)
   neivi project add <codigo> [nome] [campos]
       @BD                 disciplina (projeto academico)
       gh:usuario/repo     GitHub (ou a URL inteira)
@@ -118,27 +126,31 @@ exemplos:
       sit:pausado         ativo, pausado, concluido ou cancelado
       -- texto            descricao
   neivi project ls [all]                 all: tambem concluidos e cancelados
-  neivi project show <codigo>            panorama com as pendentes
+  neivi project show <codigo>            panorama com as pendentes (prioridade, prazo, id)
   neivi project edit <codigo> ...        os mesmos campos; - apaga (dir:-); code:novo
   neivi project rm <codigo>              so sem tarefas
 
 exemplos:
+  neivi project mrt
   neivi project add neivi Meu sucessor do Ganbatte gh:CaioParanaiba/neivi dir:~/Code/neivi
   neivi project edit ganbatte sit:pausado`,
 
-	"habit": `uso: neivi habit <add|do|undo|ls|edit|rm> ...
+	"habit": `uso: neivi habit [<habito>|add|do|undo|ls|edit|rm] ...
 
+  neivi habit                            o mesmo que habit ls
+  neivi habit <habito>... [ontem]        o mesmo que habit do, mas o que ja esta feito no dia so avisa
   neivi habit add <codigo> [nome] [meta:3 | sem:3 | dias:seg,qua,sex]
       sem nada: todo dia, feito ou nao feito
       meta:3   quantidade por dia        sem:3   3 vezes por semana (dom a sab)
       dias:    so nesses dias (dom seg ter qua qui sex sab)
-  neivi habit do <habito>... [ontem]     codigo ou id; x2 depois do habito = quantidade
+  neivi habit do <habito>... [ontem]     codigo ou id; x2 depois do habito = quantidade (done tambem vale)
   neivi habit undo <habito>... [ontem]   desfaz (nunca fica negativo)
   neivi habit ls [all]                   all: tambem os arquivados
   neivi habit edit <codigo> ...          nome, meta:, sem:, dias:, sit:ativo|arquivado, code:novo
   neivi habit rm <codigo>                so sem registros
 
 exemplos:
+  neivi habit digi
   neivi habit add cf Codeforces 3 questoes meta:3
   neivi habit do cf x2 lixo neivi
   neivi habit do lixo ontem`,
