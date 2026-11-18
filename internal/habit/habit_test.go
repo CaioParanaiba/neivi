@@ -53,26 +53,29 @@ func TestPeriod(t *testing.T) {
 
 func TestMissing(t *testing.T) {
 	tests := []struct {
-		name string
-		h    Habit
-		done int
-		day  time.Time
-		want bool
+		name    string
+		h       Habit
+		done    int // no periodo da meta
+		doneDay int // so no dia
+		day     time.Time
+		want    bool
 	}{
-		{"RN-23 diario nao feito", digi, 0, wed, true},
-		{"RN-23 diario feito", digi, 1, wed, false},
-		{"CA-18.1 quantidade pela metade", cf, 2, wed, true},
-		{"CA-18.4 passou da meta", cf, 5, wed, false},
-		{"CA-19.3 semanal ate bater", lixo, 2, wed, true},
-		{"CA-19.3 semanal bateu", lixo, 3, wed, false},
-		{"CA-19.4 dia dele", ingles, 0, wed, true},
-		{"CA-19.4 nao eh dia dele", ingles, 0, date(2026, 11, 10), false},
-		{"CA-21.3 arquivado nunca falta", Habit{Goal: 1, Kind: Daily, Status: "archived"}, 0, wed, false},
+		{"RN-23 diario nao feito", digi, 0, 0, wed, true},
+		{"RN-23 diario feito", digi, 1, 1, wed, false},
+		{"CA-18.1 quantidade pela metade", cf, 2, 2, wed, true},
+		{"CA-18.4 passou da meta", cf, 5, 5, wed, false},
+		{"CA-19.3 semanal ate bater", lixo, 2, 0, wed, true},
+		{"CA-19.3 semanal bateu", lixo, 3, 0, wed, false},
+		{"RN-23 semanal feito hoje sai do dia", lixo, 1, 1, wed, false},
+		{"RN-23 semanal feito ontem volta hoje", lixo, 1, 0, wed, true},
+		{"CA-19.4 dia dele", ingles, 0, 0, wed, true},
+		{"CA-19.4 nao eh dia dele", ingles, 0, 0, date(2026, 11, 10), false},
+		{"CA-21.3 arquivado nunca falta", Habit{Goal: 1, Kind: Daily, Status: "archived"}, 0, 0, wed, false},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := tc.h.Missing(tc.done, tc.day); got != tc.want {
+			if got := tc.h.Missing(tc.done, tc.doneDay, tc.day); got != tc.want {
 				t.Errorf("Missing = %v, queria %v", got, tc.want)
 			}
 		})
@@ -117,6 +120,7 @@ func TestValidCode(t *testing.T) {
 	}{
 		{"cf", false}, {"cf3", false}, {"x", false}, {"xadrez", false},
 		{"3", true}, {"x2", true}, {"x10", true},
+		{"do", true}, {"done", true}, {"undo", true}, {"ls", true}, {"dono", false}, // RN-26
 	}
 
 	for _, tc := range tests {

@@ -90,3 +90,69 @@ func TestIsNewIsLate(t *testing.T) {
 		})
 	}
 }
+
+func TestTomorrowEnd(t *testing.T) {
+	tests := []struct {
+		name string
+		day  time.Time
+		want string
+	}{
+		{"US-07 quarta ve a quinta", today, "2026-11-12"},
+		{"US-07 quinta ve a sexta", today.AddDate(0, 0, 1), "2026-11-13"},
+		{"US-07 sexta ve ate segunda", today.AddDate(0, 0, 2), "2026-11-16"},
+		{"US-07 sabado ve ate segunda", today.AddDate(0, 0, 3), "2026-11-16"},
+		{"US-07 domingo ve a segunda", today.AddDate(0, 0, 4), "2026-11-16"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := TomorrowEnd(tc.day).Format(isoDate); got != tc.want {
+				t.Errorf("TomorrowEnd = %s, queria %s", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestTodayTomorrowAndProjects(t *testing.T) {
+	in := []Task{
+		{ID: 211, Priority: "B", Due: "2026-11-12", ProjectID: 4, ProjectCode: "bd"}, // amanha, mesmo de projeto
+		{ID: 212, Priority: "C", Due: "2026-11-12", EstimateMin: 30},
+		{ID: 300, Priority: "A", Due: "2026-11-13"}, // depois de amanha: fora
+		{ID: 55, Priority: "B"},                                                      // avulsa: fica
+		{ID: 58, Priority: "B", ProjectID: 1, ProjectCode: "p1"},                     // de projeto: so conta
+		{ID: 59, Priority: "B", ProjectID: 1, ProjectCode: "p1"},                     // de projeto: so conta
+		{ID: 215, Priority: "B", ProjectID: 3, ProjectCode: "mrt"},                   // de projeto: so conta
+		{ID: 216, Priority: "C", ProjectID: 3, ProjectCode: "mrt"},                   // de projeto: so conta
+		{ID: 217, ProjectID: 3, ProjectCode: "mrt"},                                  // incompleta: nem conta
+		{ID: 218, Priority: "A", ProjectID: 3, ProjectCode: "mrt"},                   // A ganha do projeto
+		{ID: 219, Priority: "A", Due: "2026-11-11", ProjectID: 1, ProjectCode: "p1"}, // prazo ganha do projeto
+	}
+
+	s := Today(in, today)
+	if got := ids(s.Tomorrow); !slices.Equal(got, []int64{211, 212}) {
+		t.Errorf("amanha = %v, queria [211 212]", got)
+	}
+	if got := ids(s.Urgent); !slices.Equal(got, []int64{219}) {
+		t.Errorf("urgentes = %v, queria [219]", got)
+	}
+	if got := ids(s.Third); !slices.Equal(got, []int64{218}) || !s.Important {
+		t.Errorf("terceiro bloco = %v (importantes %v), queria so a A de projeto", got, s.Important)
+	}
+	want := []ProjectCount{{"mrt", 2}, {"p1", 2}}
+	if !slices.Equal(s.Hidden, want) || s.HiddenTotal() != 4 {
+		t.Errorf("de projetos = %v (%d), queria %v (4)", s.Hidden, s.HiddenTotal(), want)
+	}
+
+	t.Run("sem A: o sem prazo fica so com as avulsas", func(t *testing.T) {
+		s := Today(in[3:8], today)
+		if got := ids(s.Third); !slices.Equal(got, []int64{55}) || s.Important {
+			t.Errorf("sem prazo = %v, queria [55]", got)
+		}
+	})
+
+	t.Run("so amanha: hoje continua vazio", func(t *testing.T) {
+		s := Today([]Task{{ID: 1, Priority: "B", Due: "2026-11-12"}}, today)
+		if !s.IsEmpty() || len(s.Tomorrow) != 1 {
+			t.Errorf("queria hoje vazio e 1 amanha: %+v", s)
+		}
+	})
+}

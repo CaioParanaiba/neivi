@@ -71,8 +71,18 @@ func DaysFromValue(v string) []time.Weekday {
 	return days
 }
 
-// ValidCode confere o codigo (RN-25): nunca so numero, nunca x seguido de numero
+// Reserved sao os subcomandos do habit: o atalho neivi habit <codigo> nao
+// distinguiria um habito com esses nomes (RN-26)
+var Reserved = []string{"add", "do", "done", "undo", "ls", "edit", "rm"}
+
+// ValidCode confere o codigo (RN-25): nunca so numero, nunca x seguido de numero,
+// nunca nome de subcomando (RN-26)
 func ValidCode(code string) error {
+	for _, r := range Reserved {
+		if code == r {
+			return fmt.Errorf("o codigo %s eh um comando do habit (%s); escolha outro", code, strings.Join(Reserved, ", "))
+		}
+	}
 	if _, err := strconv.Atoi(code); err == nil {
 		return fmt.Errorf("o codigo %s nao pode ser so um numero (ele se confundiria com o id)", code)
 	}
@@ -138,9 +148,15 @@ func (h Habit) Period(day time.Time) (string, string) {
 	return d, d
 }
 
-// Missing diz se o habito "falta hoje" (RN-23): ativo, eh dia dele e nao bateu a meta do periodo
-func (h Habit) Missing(done int, day time.Time) bool {
-	return h.Status == "active" && h.IsDay(day) && done < h.Goal
+// DoneFor diz se o habito ja esta feito no dia (RN-23): bateu a meta do periodo,
+// ou, no "N por semana", ja teve registro nesse dia (volta no dia seguinte)
+func (h Habit) DoneFor(donePeriod, doneDay int) bool {
+	return donePeriod >= h.Goal || (h.Kind == Weekly && doneDay > 0)
+}
+
+// Missing diz se o habito "falta hoje" (RN-23): ativo, eh dia dele e nao esta feito no dia
+func (h Habit) Missing(donePeriod, doneDay int, day time.Time) bool {
+	return h.Status == "active" && h.IsDay(day) && !h.DoneFor(donePeriod, doneDay)
 }
 
 // MetaLabel eh a coluna META: "todo dia", "3 todo dia", "3 por semana", "seg, qua, sex"

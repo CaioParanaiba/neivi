@@ -1,18 +1,31 @@
 # Rascunho
 
-## Fatia atual · corte e uso real
-- Uma semana de uso real; anotar aqui o que incomodar
+## Fatia atual · ajustes da semana de uso (antes da tag v0.1.0)
+Triagem de 18/11 (notas da semana + `neivi-uso`). Codigo primeiro, CAs depois por perguntas guiadas.
+- Atalho do grupo: `project <codigo|+codigo|id>` = show; `habit <codigo|id>` = do, avisa `ja feito hoje (para marcar de novo: neivi habit do X)` e nao marca; `habits` = `habit`; grupo sozinho (`project`, `habit`, `subject`) = ls -> US-13, US-17, RN nova
+- RN nova: codigo de projeto ou habito nao pode ser nome de subcomando (add, ls, show, edit, rm, do, done, undo); erro de codigo inexistente lista os subcomandos
+- `habit done` = sinonimo de `habit do` (errar o verbo)
+- `;` `&` `|` `#` `(` na descricao sao do zsh, nao do neivi: dica no help (aspas ou trocar por `,` / ` - `)
+- Ficha de projeto e disciplina ordenada por prioridade -> prazo -> id (o trio da maratona fica junto); today e ls sem mudanca
+- Habito "N por semana" sai do today no dia em que foi feito e volta no dia seguinte; semana incompleta fecha incompleta -> RN-23
+- today: bloco `amanha` entre urgentes e importantes (sex, sab e dom = `ate segunda`), fora do `falta:`, some vazio -> US-07
+- today: `sem prazo` so com tarefas sem projeto + linha `+ N de projetos (p1: 4, ...) · neivi project show <codigo>`; A e tarefa com prazo aparecem mesmo de projeto -> RN-16
+
+## Proximas fatias
+- Temas dentro do projeto (o trio estudar/implementar/resolver da maratona); migracao 002; perguntas guiadas proprias (checklist fora: outro objetivo)
+- Ficha da disciplina: `subject show` + atalho `subject BD` / `subject 2` (projetos ligados, avulsas, ultima atividade, ordem da ficha), junto com as notas da v0.2 (US-15); ate la, `neivi ls @BD` (tentado em 18/11)
 
 ## Ideias futuras
 
 - Editar varias tarefas de uma vez (ex.: adiar tudo de BD) (US-03)
 - Concluir com datas mais antigas que ontem, se for frequente (US-04)
+- Resumo da carga dos proximos dias (`amanha: 3 tarefas (~2h) · qui: 1`), junto com o `neivi week`
+- Descricao pelo editor ou stdin, se o `;` do zsh voltar a incomodar (caso raro em 18/11)
 - Revisao semanal (C10): `neivi week` com as feitas na semana + o planejado nas proximas 2 semanas -> decidir depois do corte (US-09)
 - Revisao semanal da maratona (#106 do Ganbatte) volta quando houver recorrencia
 - Ritual mensal de backup (copiar para o HD + testar restauracao) eh um caso real de tarefa recorrente (D-16)
 
 - v0.2 (notas): ao registrar a nota final, oferecer encerrar a disciplina (US-15)
-- Chamar o projeto pelo id tambem (`project show 3`), so se fizer falta (US-13)
 
 - Compensar o dia de um habito de dias especificos (fiz na segunda, entao a terca nao precisa) (US-18)
 - Revisoes semanais (financeiro na sexta, estudos no domingo) como tarefas recorrentes, quando recorrencia entrar (D-16)
@@ -28,6 +41,19 @@
 - (vazio)
 
 ---
+
+## Semana de uso real (fechada em 2026-11-18)
+Uma semana de uso real (ate ~18/11). Anotar na hora, sem resolver, com `neivi-note <marca> <texto>`:
+`[bug]` diferente do requisito · `[chato]` funciona, mas incomoda · `[falta]` precisei e nao tem · `[ideia]` sem precisar agora.
+No fim da semana: `neivi-uso` (resumo do log de comandos) e a triagem desta lista.
+- ✓ [bug] 11/11 nao sei se eh um bug ou um erro nos requisitos, mas o neivi project show 4 nao funcionou pois ele so funciona o show com o codigo e nao com o id
+- ✓ [bug] 11/11 durante a descricao o comando
+- ✓ [bug] 11/11 durante a descricao o comando ; acaba nao funcionando encerrando o codigo o mesmo pra r o neivi-note como visto em cima
+- ✓ [chato] 12/11 tem algum motivo para o habit usar do e a task done, parece que tenho qeu decorar quando uso cada um
+- ✓ [ideia] 12/11 na vizualizacao de tarefas no mrt, como sempre tenho um trio de conteudo, estudar implementar e resolver, devido a est, as tarefas nao ficam sempre juntas, exemplo 31 32 33, ai tenho que ficar proxurando elas, sera que para show de projetos e desciplinas nao fazer sorte pelo est fazer pelo id em si? ou pensamos em outra abordagaem
+- ✓ [ideia] 16/11 nao vejo necessidade de mostrar habitos semanais no dia, apos fazer o habito do dia, exemplo: lixo ao fazer uma vez no dia ele tem que sumir do neivi today
+- ✓ [chato] 16/11 eh mais importante ver tarefas com proximos prazos, estou dessa forma so vend as proximas tarefas no dia seguinte, as vezes vale mais apena adiantar algo dos proximos dias do que focar nas sem prazo
+- Triagem: tudo para a fatia atual, menos temas (proximas fatias) e editor/resumo da carga (ideias futuras)
 
 ## Fatia 5 · Importacao (fechada em 2026-11-11)
 - ✓ Chaves do Ganbatte vao para a descricao na importacao (D-31) -> UC-01

@@ -179,6 +179,11 @@ func GetProject(db *sql.DB, code string) (project.Project, error) {
 	return scanProject(db.QueryRow(selectProjects+" WHERE p.code = ?", code))
 }
 
+// GetProjectByID busca o projeto pelo id; nao existe = sql.ErrNoRows
+func GetProjectByID(db *sql.DB, id int64) (project.Project, error) {
+	return scanProject(db.QueryRow(selectProjects+" WHERE p.id = ?", id))
+}
+
 // ListProjects devolve os projetos: ativos e pausados, ou todos (all).
 // A ordem dos grupos e da ultima atividade fica no cli.
 func ListProjects(db *sql.DB, all bool) ([]project.Project, error) {

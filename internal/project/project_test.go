@@ -39,3 +39,19 @@ func TestStatus(t *testing.T) {
 		t.Errorf("CA-11.5 erro = %v, queria %q", err, want)
 	}
 }
+
+func TestValidCode(t *testing.T) {
+	tests := []struct {
+		code    string
+		wantErr bool
+	}{
+		{"mrt", false}, {"p1", false}, {"bd-feedback360", false}, {"shows", false},
+		{"4", true}, {"ls", true}, {"show", true}, {"add", true}, {"edit", true}, {"rm", true},
+	}
+
+	for _, tc := range tests {
+		if err := ValidCode(tc.code); (err != nil) != tc.wantErr {
+			t.Errorf("RN-26 ValidCode(%q) = %v, queria erro: %v", tc.code, err, tc.wantErr)
+		}
+	}
+}

@@ -56,3 +56,18 @@ func TestSorts(t *testing.T) {
 		})
 	}
 }
+
+func TestSortPlan(t *testing.T) {
+	// o trio de um tema: a EST nao separa, o id mantem a ordem de criacao
+	ts := []Task{
+		{ID: 36, Priority: "C", EstimateMin: 90},
+		{ID: 35, Priority: "C", EstimateMin: 45},
+		{ID: 34, Priority: "C", EstimateMin: 60},
+		{ID: 40, Priority: "B"},
+		{ID: 50, Priority: "C", Due: "2026-11-20"},
+	}
+	SortPlan(ts)
+	if got := ids(ts); !slices.Equal(got, []int64{40, 50, 34, 35, 36}) {
+		t.Errorf("SortPlan = %v, queria [40 50 34 35 36]", got)
+	}
+}

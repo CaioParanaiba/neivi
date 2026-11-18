@@ -49,6 +49,12 @@ func ParseProject(args []string, isEdit bool) (ProjectEntry, error) {
 		return ProjectEntry{}, fmt.Errorf("falta o codigo do projeto (exemplo: neivi project add neivi)")
 	}
 	e.Code = args[0]
+	if !isEdit {
+		err := project.ValidCode(e.Code)
+		if err != nil {
+			return ProjectEntry{}, err
+		}
+	}
 
 	var name, desc []string
 	var inDesc bool
@@ -93,7 +99,9 @@ func ParseProject(args []string, isEdit bool) (ProjectEntry, error) {
 		case "code":
 			if !isEdit {
 				err = fmt.Errorf("code: so vale no edit (no add, o codigo eh a primeira palavra)")
+				break
 			}
+			err = project.ValidCode(value)
 			e.NewCode = value
 		default:
 			name = append(name, v) // outra palavra com ":" faz parte do nome (como no titulo, RN-04)

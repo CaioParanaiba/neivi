@@ -62,6 +62,14 @@ func SortDefault(ts []Task) {
 	})
 }
 
+// SortPlan eh a ordem da ficha do projeto: prioridade -> prazo -> id, sem a EST,
+// para as tarefas de um mesmo tema ficarem juntas na ordem em que foram criadas
+func SortPlan(ts []Task) {
+	slices.SortFunc(ts, func(a, b Task) int {
+		return cmp.Or(cmpPriority(a, b), cmpDue(a, b), cmpID(a, b))
+	})
+}
+
 // SortByDue eh a ordem do resumo diario e do ls due: prazo -> prioridade -> EST -> id
 func SortByDue(ts []Task) {
 	slices.SortFunc(ts, func(a, b Task) int {
