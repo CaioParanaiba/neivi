@@ -1,6 +1,6 @@
 # Requisitos do Neivi
 
-Cobre: v0.1 · Versao do doc: 0.6 · 2026-11-18
+Cobre: v0.1 · Versao do doc: 0.7 · 2026-11-20
 
 | Versao    | data          | Mudanca                   |
 |-----------|---------------|---------------------------|
@@ -10,6 +10,7 @@ Cobre: v0.1 · Versao do doc: 0.6 · 2026-11-18
 | 0.4       | 2026-11-09    | Revisao contra o SPEC: escopo, glossario e decisoes D-22 a D-32; 1 e 2 fechados |
 | 0.5       | 2026-11-11    | Fatia 1 (tarefas) fechada: US-01 a US-06, RN-01 a RN-15, RNF-01 a RNF-05, modelo conceitual, D-33 e rastreabilidade |
 | 0.6       | 2026-11-18    | Semana de uso real: RN-26, RN-16/17/23/25 revistas, US-07, US-10, US-13, US-17 a US-19 e US-22 com CAs novos, D-39 |
+| 0.7       | 2026-11-20    | Linha das incompletas no today: US-07 (CA-07.7 revisto, CA-07.13 e CA-07.14) e RN-16 |
 
 # 1. Introducao
 
@@ -517,7 +518,7 @@ Prioridade: Must · Fatia: 1 · Cenarios: C8, C2 · Regras: RN-01, RN-12, RN-13
 Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
 
 **Como** eu, ao ligar o PC (C1) e ao longo do dia, depois de concluir uma tarefa (C4),
-**quero** ver de uma vez o que tem para hoje (atrasadas, urgentes e importantes) e o que vence amanha, com o tempo estimado do que falta,
+**quero** ver de uma vez o que tem para hoje (atrasadas, urgentes e importantes) e o que vence amanha, com o tempo estimado do que falta e quantas tarefas esperam a triagem,
 **para** me preparar para o dia em ~1 min e escolher a proxima tarefa sem montar filtro.
 
 **Criterios de aceitacao** (hoje = qua 11/11/2026; 3 tarefas ja concluidas hoje)
@@ -559,7 +560,7 @@ Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
   entao aparece `nada para hoje, bom trabalho!` e `hoje: 3 concluidas`.
   Com tarefas para amanha, a frase vem primeiro e o bloco amanha depois, como sugestao do que adiantar; sem `falta:`.
 - **CA-07.7** *(estado, dia livre com incompletas)* Dado que nada se encaixa nos tres blocos e ha 4 incompletas,
-  entao aparece `nada para hoje, bom trabalho!`, `voce tem 4 tarefas incompletas: que tal completar? (neivi triage)` e `hoje: 3 concluidas`.
+  entao aparece `nada para hoje, bom trabalho!`, `incompletas: 4 · neivi triage` e `hoje: 3 concluidas`.
 - **CA-07.8** *(limite, EST)* Dado que nenhuma tarefa mostrada tem EST,
   entao aparece `falta: sem EST (3 tarefas)` no lugar da soma.
 - **CA-07.9** *(entrada invalida)* Quando registro `neivi today xyz`,
@@ -567,6 +568,16 @@ Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
 - **CA-07.10** *(caminho feliz, amanha)* Numa quarta, com 1 `revisao em grupo pri:B due:amanha est:2h` e 2 `estudar POO pri:B est:30m`: blocos `amanha (1)` e `sem prazo (1)`, e `falta: ~30m` (o amanha nao entra).
 - **CA-07.11** *(limite, fim de semana)* Na sexta, no sabado e no domingo, o bloco se chama `ate segunda` e mostra os prazos ate a segunda.
 - **CA-07.12** *(limite, projetos)* Com 2 B sem prazo do `p1` e 1 C do `mrt`, elas nao aparecem no `sem prazo` e sim na linha `+ 3 de projetos (p1: 2, mrt: 1) · neivi project show <codigo>`. Uma A sem prazo de projeto aparece em `importantes`; uma de projeto com prazo hoje, em `urgentes`.
+- **CA-07.13** *(caminho feliz, incompletas)* Dado as pendentes do CA-07.1 e mais 14 `ideia qualquer` e 15 `pagar aluguel due:hoje`, sem prioridade,
+  entao, entre a linha de projetos e o `falta:`, aparece:
+
+      incompletas: 2 · neivi triage
+      falta: ~4h30 (1 sem EST)
+      hoje: 3 concluidas
+
+  (o numero eh o mesmo do `neivi triage`: conta todas as incompletas, inclusive a 15, que ja aparece em urgentes (CA-07.3), e as de projeto)
+- **CA-07.14** *(limite, sem incompletas)* Dado que nao ha nenhuma incompleta,
+  entao a linha `incompletas` nao aparece.
 
 **Notas:** o contador aparece sempre, mesmo `hoje: 0 concluidas`. Os habitos que faltam hoje aparecem no fim (US-19, CA-19.1).
 
@@ -1060,8 +1071,8 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 
   Fonte: Q-14 · Usada em: US-02, US-03
 
-- **RN-16** Resumo diario: blocos de tarefas pendentes, nesta ordem: atrasadas (prazo antes de hoje), urgentes (prazo hoje, qualquer prioridade, inclusive sem prioridade), amanha (prazo amanha; na sexta, no sabado e no domingo vira "ate segunda" e vai ate a segunda) e importantes (prioridade A sem prazo). Se nao ha nenhuma A sem prazo, o ultimo bloco vira "sem prazo" e mostra todas do nivel mais alto que existir entre as sem prazo (B, senao C, senao D). Sem prazo de projeto ficam fora do ultimo bloco, menos as A (o projeto tem horario proprio): aparecem so numa linha `+ N de projetos (p1: 4, mrt: 2) · neivi project show <codigo>`. Incompleta sem prazo nunca aparece. O `falta:` soma so o que eh de hoje (o amanha nao entra). Bloco vazio nao aparece; sem nada para hoje, "nada para hoje" (com a dica do triage se houver incompletas), seguido do amanha, se houver.
-  Fonte: D-27, CA-07.1 a CA-07.7, triagem da semana de uso (18/11), CA-07.10 a CA-07.12 · Usada em: US-07
+- **RN-16** Resumo diario: blocos de tarefas pendentes, nesta ordem: atrasadas (prazo antes de hoje), urgentes (prazo hoje, qualquer prioridade, inclusive sem prioridade), amanha (prazo amanha; na sexta, no sabado e no domingo vira "ate segunda" e vai ate a segunda) e importantes (prioridade A sem prazo). Se nao ha nenhuma A sem prazo, o ultimo bloco vira "sem prazo" e mostra todas do nivel mais alto que existir entre as sem prazo (B, senao C, senao D). Sem prazo de projeto ficam fora do ultimo bloco, menos as A (o projeto tem horario proprio): aparecem so numa linha `+ N de projetos (p1: 4, mrt: 2) · neivi project show <codigo>`. Incompleta sem prazo nunca aparece. O `falta:` soma so o que eh de hoje (o amanha nao entra). Bloco vazio nao aparece; sem nada para hoje, "nada para hoje", seguido do amanha, se houver. Com incompletas, a linha `incompletas: N · neivi triage` (o mesmo numero do triage, contando todas) vem antes do `falta:`, ou antes do `hoje:` no dia livre; sem incompletas, some.
+  Fonte: D-27, CA-07.1 a CA-07.7, triagem da semana de uso (18/11), CA-07.10 a CA-07.12, nota de 19/11 (CA-07.13, CA-07.14) · Usada em: US-07
 - **RN-17** Ordenacao: no resumo diario, prazo (mais antigo primeiro) -> prioridade (A a D, sem prioridade por ultimo) -> EST (mais rapidas primeiro, sem EST por ultimo) -> id. Na listagem padrao, prioridade -> prazo -> EST -> id. Na ficha do projeto, prioridade -> prazo -> id (sem a EST, para as tarefas de um tema ficarem juntas). No triage, data de criacao (mais antiga primeiro) -> id.
   Fonte: D-04, D-28, US-08 · Usada em: US-07, US-08, US-09
 - **RN-18** Filtros da listagem: `@codigo`, `+codigo`, `pri:X` escolhem; `@` e `+` sozinhos = qualquer disciplina / qualquer projeto; `@-`, `+-`, `pri:-` = sem. Disciplina usa a disciplina efetiva (RN-14). `new` = criadas hoje ou ontem (D-11); `late` = atrasadas. Filtros do mesmo tipo sao "ou"; de tipos diferentes, "e". Outras palavras buscam no titulo: todas precisam aparecer, ignorando maiusculas e acentos. Palavras reservadas (`all`, `done`, `late`, `new`, `due`, `desc`) nao entram na busca.
@@ -1273,7 +1284,7 @@ Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos 
 | US-05 | CA-05.1 a 05.4 | `cmd/neivi`: TestReopen, TestParseIDs; `internal/store`: TestReopenTask |
 | US-06 | CA-06.1 a 06.5 | `cmd/neivi`: TestRm; `internal/store`: TestRmTask |
 
-| US-07 | CA-07.1 a CA-07.12 | `cmd/neivi`: TestToday (07.1, 07.2, 07.3, 07.6 a 07.9), TestTodayTomorrow (07.6, 07.10 a 07.12); `internal/task`: TestToday (07.1 a 07.6), TestIsNewIsLate, TestTomorrowEnd (07.11), TestTodayTomorrowAndProjects (07.10, 07.12) |
+| US-07 | CA-07.1 a CA-07.14 | `cmd/neivi`: TestToday (07.1, 07.2, 07.3, 07.6 a 07.9, 07.13, 07.14), TestTodayTomorrow (07.6, 07.10 a 07.12); `internal/task`: TestToday (07.1 a 07.6), TestIsNewIsLate, TestTomorrowEnd (07.11), TestTodayTomorrowAndProjects (07.10, 07.12) |
 | US-08 | CA-08.1 a CA-08.5 | `cmd/neivi`: TestTriage; `internal/task`: TestSorts (08.1); `internal/store`: TestListTasksFilter (08.2) |
 | US-09 | CA-09.1 a CA-09.9 | `cmd/neivi`: TestLs; `internal/store`: TestListTasksFilter (09.1 a 09.5); `internal/task`: TestSorts (09.1, 09.5, 09.7), TestMatchWords (09.4), TestFilterIsEmpty (09.8); `internal/todotxt`: TestParseFilter |
 | US-10 | CA-10.1 a CA-10.7 | `cmd/neivi`: TestShow, TestDaysLabel (10.1, 10.3), TestCodeName (10.1), TestShortcuts (10.7) |

@@ -12,7 +12,8 @@ Triagem de 18/11 (notas da semana + `neivi-uso`). Codigo primeiro, CAs depois po
 - today: `sem prazo` so com tarefas sem projeto + linha `+ N de projetos (p1: 4, ...) · neivi project show <codigo>`; A e tarefa com prazo aparecem mesmo de projeto -> RN-16
 - [ideia] 18/11 ter uma marcacao para deixar claro que nao farei um hbaito hoje, pois as vezes ja passou ou nao vou fazer, assim mostrando que ele nao sera feito consigo focar nos habitos que ainda estao, como sera a visualizacao disso a decidir -> candidata da migracao 002 (registro novo no banco: coluna em habit_logs ou tabela habit_skips), junto da 191
 - [chato] 18/11 percebo que sempre realizo uma acao no neivi eu sempre logo em seguida eu faco neivi today -> descartada em 19/11: as vezes quero so dar done; a TUI resolve (visao sempre na tela)
-- [ideia] 19/11 mostrar no today o numero de tarefas incompletas agaurdadno o triage
+- [ideia] 19/11 mostrar no today o numero de tarefas incompletas agaurdadno o triage -> feito em 20/11: linha `incompletas: N · neivi triage` antes do `falta:` (US-07, CA-07.13, CA-07.14; CA-07.7 trocado pela linha)
+- [duvida] 20/11 o bloco `sem prazo` (B sem prazo avulsas) impede o `nada para hoje`; so atrasadas, urgentes e importantes deveriam contar? -> RN-16 / CA-07.6, decidir depois da v0.1
 
 ## Proximas fatias
 - Temas dentro do projeto (o trio estudar/implementar/resolver da maratona); migracao 002; perguntas guiadas proprias (checklist fora: outro objetivo)

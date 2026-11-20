@@ -211,9 +211,10 @@ palavras usam a mesma sintaxe da entrada e se combinam:
 (requisitos RN-16): atrasadas, urgentes (prazo hoje, qualquer prioridade) e
 importantes (prioridade A sem prazo); sem nenhuma A sem prazo, o terceiro vira
 "sem prazo" com o nível mais alto que existir. Cada bloco é uma tabela com o
-próprio cabeçalho, todas com a mesma largura de coluna. No fim, `falta: ~4h`
-(soma das EST) e o contador do dia. Dia vazio: `nada para hoje`, com a dica do
-`triage` se houver incompletas. Os hábitos do dia entram abaixo.
+próprio cabeçalho, todas com a mesma largura de coluna. No fim,
+`incompletas: N · neivi triage` (só se houver; o mesmo número do `triage`),
+`falta: ~4h` (soma das EST) e o contador do dia. Dia vazio: `nada para hoje`,
+a linha das incompletas e o contador. Os hábitos do dia entram abaixo.
 
 **Listas em tabela** (`today`, `ls`, `triage`): `ID P PRAZO EST TAREFA`, o `X`
 só no `ls all`, prazo como `qua 11/11`. A tabela é montada à mão
