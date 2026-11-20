@@ -254,16 +254,6 @@ func runToday(db *sql.DB, args []string) {
 	if s.IsEmpty() {
 		fmt.Println("nada para hoje, bom trabalho!")
 
-		incomplete := 0
-		for _, t := range pending {
-			if t.Priority == "" {
-				incomplete++
-			}
-		}
-		if incomplete > 0 {
-			fmt.Printf("voce tem %d tarefas incompletas: que tal completar? (neivi triage)\n", incomplete)
-		}
-
 		// dia livre: o amanha vem depois da frase, como sugestao do que adiantar (CA-07.6)
 		if len(s.Tomorrow) > 0 {
 			fmt.Println()
@@ -273,6 +263,7 @@ func runToday(db *sql.DB, args []string) {
 		if len(s.Tomorrow) > 0 {
 			fmt.Println()
 		}
+		printIncomplete(pending)
 	} else {
 		third := "importantes"
 		if !s.Important {
@@ -288,6 +279,7 @@ func runToday(db *sql.DB, args []string) {
 		printHiddenLine(s)
 
 		fmt.Println()
+		printIncomplete(pending)
 		var falta string
 		switch {
 		case est == 0:
@@ -308,6 +300,20 @@ func runToday(db *sql.DB, args []string) {
 	fmt.Println(paint(stFooter, fmt.Sprintf("hoje: %d concluidas", n)))
 
 	printHabitsToday(db, now)
+}
+
+// printIncomplete eh a linha "incompletas: 2 · neivi triage", com o mesmo numero
+// do triage (todas as pendentes sem prioridade); sem incompletas, some (CA-07.13, CA-07.14)
+func printIncomplete(pending []task.Task) {
+	n := 0
+	for _, t := range pending {
+		if t.Priority == "" {
+			n++
+		}
+	}
+	if n > 0 {
+		fmt.Println(paint(stFooter, fmt.Sprintf("incompletas: %d · neivi triage", n)))
+	}
 }
 
 // printHiddenLine eh a linha das sem prazo de projeto que ficaram fora do today:

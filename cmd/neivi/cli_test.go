@@ -383,7 +383,7 @@ func entrada(daysFromToday int) string {
 }
 
 func TestToday(t *testing.T) {
-	t.Run("CA-07.1 tres blocos, falta e contador", func(t *testing.T) {
+	t.Run("CA-07.1 e CA-07.14 tres blocos, falta e contador, sem incompletas", func(t *testing.T) {
 		c := newCLI(t)
 		c.must("subject", "add", "ED")
 		c.must("subject", "add", "BD")
@@ -422,6 +422,28 @@ func TestToday(t *testing.T) {
 		check(t, out, errOut, want, "")
 	})
 
+	t.Run("CA-07.13 linha das incompletas, mesmo numero do triage", func(t *testing.T) {
+		c := newCLI(t)
+		c.must("project", "add", "p1")
+		c.must("add", "pagar", "aluguel", "due:hoje", "est:30m")
+		c.must("add", "ideia", "qualquer")
+		c.must("add", "tarefa", "do", "p1", "+p1")
+
+		var tb table
+		r := []string{"1", "", dia(0), "30m", "pagar aluguel"}
+		tb.fit(header(false))
+		tb.fit(r)
+		want := strings.Join([]string{
+			"urgentes (1)", tb.line(header(false)), tb.line(r), "",
+			"incompletas: 3 · neivi triage", // a 1 ja esta em urgentes e a 3 eh de projeto: contam
+			"falta: ~30m",
+			"hoje: 0 concluidas",
+		}, "\n")
+
+		out, errOut, _ := c.run("", "today")
+		check(t, out, errOut, want, "")
+	})
+
 	t.Run("CA-07.2 sem A sem prazo vira sem prazo", func(t *testing.T) {
 		c := newCLI(t)
 		c.must("add", "estudar", "sorting", "pri:B", "est:1h")
@@ -443,7 +465,7 @@ func TestToday(t *testing.T) {
 		{"CA-07.6 dia livre", nil, []string{"today"},
 			"nada para hoje, bom trabalho!\nhoje: 0 concluidas", ""},
 		{"CA-07.7 dia livre com incompletas", [][]string{{"add", "ideia"}, {"add", "outra"}}, []string{"today"},
-			"nada para hoje, bom trabalho!\nvoce tem 2 tarefas incompletas: que tal completar? (neivi triage)\nhoje: 0 concluidas", ""},
+			"nada para hoje, bom trabalho!\nincompletas: 2 · neivi triage\nhoje: 0 concluidas", ""},
 		{"CA-07.8 sem EST", [][]string{{"add", "pagar", "aluguel", "due:hoje"}}, []string{"today"},
 			"", ""}, // conferido abaixo
 		{"CA-07.9 argumento", nil, []string{"today", "xyz"},
