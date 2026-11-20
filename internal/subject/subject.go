@@ -1,7 +1,19 @@
 // Package subject define o tipo das disciplinas
 package subject
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/CaioParanaiba/neivi/internal/codes"
+)
+
+// Reserved sao os subcomandos do subject, ja com o show do atalho futuro (RN-26)
+var Reserved = []string{"add", "ls", "show", "edit", "rm"}
+
+// ValidCode confere o codigo (RN-26)
+func ValidCode(code string) error {
+	return codes.Check(code, "subject", Reserved)
+}
 
 type Subject struct {
 	ID      int64

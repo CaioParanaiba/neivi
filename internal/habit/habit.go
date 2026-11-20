@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/CaioParanaiba/neivi/internal/codes"
 )
 
 const isoDate = "2006-01-02"
@@ -75,21 +77,12 @@ func DaysFromValue(v string) []time.Weekday {
 // distinguiria um habito com esses nomes (RN-26)
 var Reserved = []string{"add", "do", "done", "undo", "ls", "edit", "rm"}
 
-// ValidCode confere o codigo (RN-25): nunca so numero, nunca x seguido de numero,
-// nunca nome de subcomando (RN-26)
+// ValidCode confere o codigo: nunca x seguido de numero (RN-25), o resto da RN-26
 func ValidCode(code string) error {
-	for _, r := range Reserved {
-		if code == r {
-			return fmt.Errorf("o codigo %s eh um comando do habit (%s); escolha outro", code, strings.Join(Reserved, ", "))
-		}
-	}
-	if _, err := strconv.Atoi(code); err == nil {
-		return fmt.Errorf("o codigo %s nao pode ser so um numero (ele se confundiria com o id)", code)
-	}
 	if IsQuantity(code) {
 		return fmt.Errorf("o codigo %s nao pode ser x seguido de numero (ele se confundiria com a quantidade)", code)
 	}
-	return nil
+	return codes.Check(code, "habit", Reserved)
 }
 
 // IsQuantity diz se a palavra eh uma quantidade (x2, x10)

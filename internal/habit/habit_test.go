@@ -119,7 +119,7 @@ func TestValidCode(t *testing.T) {
 		wantErr bool
 	}{
 		{"cf", false}, {"cf3", false}, {"x", false}, {"xadrez", false},
-		{"3", true}, {"x2", true}, {"x10", true},
+		{"3", true}, {"1cf", true}, {"x2", true}, {"x10", true},
 		{"do", true}, {"done", true}, {"undo", true}, {"ls", true}, {"dono", false}, // RN-26
 	}
 

@@ -46,7 +46,7 @@ func TestValidCode(t *testing.T) {
 		wantErr bool
 	}{
 		{"mrt", false}, {"p1", false}, {"bd-feedback360", false}, {"shows", false},
-		{"4", true}, {"ls", true}, {"show", true}, {"add", true}, {"edit", true}, {"rm", true},
+		{"4", true}, {"2p", true}, {"ls", true}, {"show", true}, {"add", true}, {"edit", true}, {"rm", true},
 	}
 
 	for _, tc := range tests {

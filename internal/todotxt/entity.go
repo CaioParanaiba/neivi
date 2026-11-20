@@ -134,6 +134,12 @@ func ParseSubject(args []string, isEdit bool) (SubjectEntry, error) {
 		return SubjectEntry{}, fmt.Errorf("falta o codigo da disciplina (exemplo: neivi subject add BD)")
 	}
 	e.Code = args[0]
+	if !isEdit {
+		err := subject.ValidCode(e.Code)
+		if err != nil {
+			return SubjectEntry{}, err
+		}
+	}
 
 	var name []string
 	for _, v := range args[1:] {
@@ -150,7 +156,9 @@ func ParseSubject(args []string, isEdit bool) (SubjectEntry, error) {
 		case "code":
 			if !isEdit {
 				err = fmt.Errorf("code: so vale no edit (no add, o codigo eh a primeira palavra)")
+				break
 			}
+			err = subject.ValidCode(value)
 			e.NewCode = value
 		default:
 			name = append(name, v)

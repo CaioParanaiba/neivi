@@ -3,26 +3,17 @@ package project
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
+
+	"github.com/CaioParanaiba/neivi/internal/codes"
 )
 
 // Reserved sao os subcomandos do project: o atalho neivi project <codigo> nao
 // distinguiria um projeto com esses nomes (RN-26)
 var Reserved = []string{"add", "ls", "show", "edit", "rm"}
 
-// ValidCode confere o codigo (RN-26): nunca so numero (se confundiria com o id),
-// nunca nome de subcomando
+// ValidCode confere o codigo (RN-26)
 func ValidCode(code string) error {
-	if _, err := strconv.Atoi(code); err == nil {
-		return fmt.Errorf("o codigo %s nao pode ser so um numero (ele se confundiria com o id)", code)
-	}
-	for _, r := range Reserved {
-		if code == r {
-			return fmt.Errorf("o codigo %s eh um comando do project (%s); escolha outro", code, strings.Join(Reserved, ", "))
-		}
-	}
-	return nil
+	return codes.Check(code, "project", Reserved)
 }
 
 type Project struct {
