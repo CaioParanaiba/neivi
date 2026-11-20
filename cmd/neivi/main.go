@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/CaioParanaiba/neivi/internal/store"
 )
@@ -34,7 +35,45 @@ func dbPath() (string, error) {
 	return filepath.Join(dir, "neivi.db"), nil
 }
 
+// isHelp diz se a palavra eh um pedido de ajuda (D-39)
+func isHelp(s string) bool {
+	return s == "-h" || s == "-help" || s == "--help"
+}
+
+// helpTopic acha o pedido de ajuda: so como primeira palavra depois do comando
+// ou, nos grupos, depois do subcomando (CA-22.1, CA-22.5)
+func helpTopic(args []string) (string, bool) {
+	if len(args) == 0 {
+		return "", false
+	}
+	if isHelp(args[0]) {
+		return "", true // neivi -help: a lista de comandos
+	}
+	topic := args[0]
+	if topic == "habits" {
+		topic = "habit"
+	}
+	if len(args) > 1 && isHelp(args[1]) {
+		return topic, true
+	}
+	group := topic == "subject" || topic == "project" || topic == "habit"
+	if group && len(args) > 2 && isHelp(args[2]) {
+		return topic, true
+	}
+	return "", false
+}
+
 func main() {
+	if topic, ok := helpTopic(os.Args[1:]); ok {
+		runHelp(topic)
+		return
+	}
+
+	if len(os.Args) < 2 {
+		usage()
+		os.Exit(1)
+	}
+
 	path, err := dbPath()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "erro:", err)
@@ -49,11 +88,6 @@ func main() {
 
 	defer db.Close()
 
-	if len(os.Args) < 2 {
-		usage()
-		os.Exit(1)
-	}
-
 	switch os.Args[1] {
 	case "add":
 		runAdd(db, os.Args[2:])
@@ -67,8 +101,6 @@ func main() {
 		runShow(db, os.Args[2:])
 	case "habit", "habits":
 		runHabit(db, os.Args[2:])
-	case "help":
-		runHelp(os.Args[2:])
 	case "subject":
 		runSubject(db, os.Args[2:])
 	case "project":
@@ -82,7 +114,12 @@ func main() {
 	case "edit":
 		runEdit(db, os.Args[2:])
 	default:
-		fmt.Fprintf(os.Stderr, "erro: comando %s desconhecido (veja os comandos no neivi help)\n", os.Args[1])
+		// atalho: neivi 211 = neivi show 211 (RN-26)
+		if _, err := strconv.ParseInt(os.Args[1], 10, 64); err == nil {
+			runShow(db, os.Args[1:])
+			return
+		}
+		fmt.Fprintf(os.Stderr, "erro: comando %s desconhecido (ajuda: neivi -help)\n", os.Args[1])
 		os.Exit(1)
 	}
 }

@@ -187,6 +187,53 @@ func runLs(db *sql.DB, args []string) {
 	printTasks(append(pending, done...), f.All, f.Desc, time.Now())
 }
 
+// todayGroup eh um bloco do today; soma diz se entra no falta: (o amanha nao entra)
+type todayGroup struct {
+	title string
+	ts    []task.Task
+	soma  bool
+}
+
+// printGroups mostra os blocos com as mesmas larguras em todos (bloco vazio nao aparece, RN-16)
+// e devolve a EST somada, quantas sem EST e quantas entraram na soma
+func printGroups(groups []todayGroup, now time.Time) (est int64, noEst, shown int) {
+	var tb table
+	tb.fit(header(false))
+	for _, g := range groups {
+		for _, t := range g.ts {
+			tb.fit(row(t, false, false, now))
+			if !g.soma {
+				continue
+			}
+			shown++
+			if t.EstimateMin > 0 {
+				est += t.EstimateMin
+			} else {
+				noEst++
+			}
+		}
+	}
+
+	first := true
+	for _, g := range groups {
+		if len(g.ts) == 0 {
+			continue
+		}
+		if !first {
+			fmt.Println()
+		}
+		first = false
+
+		fmt.Println(paint(stSection, fmt.Sprintf("%s (%d)", g.title, len(g.ts))))
+		fmt.Println(paint(stDim, tb.line(header(false))))
+		for _, t := range g.ts {
+			r := row(t, false, false, now)
+			fmt.Println(tb.paintedLine(r, paintRow(r, false)))
+		}
+	}
+	return est, noEst, shown
+}
+
 func runToday(db *sql.DB, args []string) {
 	noArgs("today", args)
 
@@ -199,9 +246,13 @@ func runToday(db *sql.DB, args []string) {
 	now := time.Now()
 	s := task.Today(pending, now)
 
-	if s.IsEmpty() && len(s.Tomorrow) == 0 {
+	tomorrow := "amanha"
+	if now.Weekday() == time.Friday || now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
+		tomorrow = "ate segunda"
+	}
+
+	if s.IsEmpty() {
 		fmt.Println("nada para hoje, bom trabalho!")
-		printHiddenLine(s)
 
 		incomplete := 0
 		for _, t := range pending {
@@ -212,71 +263,33 @@ func runToday(db *sql.DB, args []string) {
 		if incomplete > 0 {
 			fmt.Printf("voce tem %d tarefas incompletas: que tal completar? (neivi triage)\n", incomplete)
 		}
+
+		// dia livre: o amanha vem depois da frase, como sugestao do que adiantar (CA-07.6)
+		if len(s.Tomorrow) > 0 {
+			fmt.Println()
+			printGroups([]todayGroup{{tomorrow, s.Tomorrow, false}}, now)
+		}
+		printHiddenLine(s)
+		if len(s.Tomorrow) > 0 {
+			fmt.Println()
+		}
 	} else {
 		third := "importantes"
 		if !s.Important {
 			third = "sem prazo"
 		}
-		tomorrow := "amanha"
-		if now.Weekday() == time.Friday || now.Weekday() == time.Saturday || now.Weekday() == time.Sunday {
-			tomorrow = "ate segunda"
-		}
 
-		groups := []struct {
-			title string
-			ts    []task.Task
-			soma  bool // entra no falta: (o amanha nao entra)
-		}{
+		est, noEst, shown := printGroups([]todayGroup{
 			{"atrasadas", s.Late, true},
 			{"urgentes", s.Urgent, true},
 			{tomorrow, s.Tomorrow, false},
 			{third, s.Third, true},
-		}
-
-		// todas as linhas primeiro, para as larguras valerem para todos os grupos
-		var tb table
-		tb.fit(header(false))
-		var est int64
-		var noEst, shown int
-		for _, g := range groups {
-			for _, t := range g.ts {
-				tb.fit(row(t, false, false, now))
-				if !g.soma {
-					continue
-				}
-				shown++
-				if t.EstimateMin > 0 {
-					est += t.EstimateMin
-				} else {
-					noEst++
-				}
-			}
-		}
-
-		first := true
-		for _, g := range groups {
-			if len(g.ts) == 0 {
-				continue // bloco vazio nao aparece (RN-16)
-			}
-			if !first {
-				fmt.Println()
-			}
-			first = false
-
-			fmt.Println(paint(stSection, fmt.Sprintf("%s (%d)", g.title, len(g.ts))))
-			fmt.Println(paint(stDim, tb.line(header(false))))
-			for _, t := range g.ts {
-				r := row(t, false, false, now)
-				fmt.Println(tb.paintedLine(r, paintRow(r, false)))
-			}
-		}
+		}, now)
 		printHiddenLine(s)
 
 		fmt.Println()
 		var falta string
 		switch {
-		case shown == 0:
-			falta = "falta: nada para hoje" // so o bloco amanha apareceu
 		case est == 0:
 			falta = fmt.Sprintf("falta: sem EST (%d tarefas)", shown)
 		case noEst > 0:
@@ -330,7 +343,7 @@ func runTriage(db *sql.DB, args []string) {
 	fmt.Println(paint(stSection, fmt.Sprintf("incompletas (%d)", len(lista))))
 	printTasks(lista, false, false, time.Now())
 	fmt.Println()
-	fmt.Println(paint(stDim, "criterio de prioridade: neivi help pri"))
+	fmt.Println(paint(stDim, "criterio de prioridade: neivi pri -help"))
 }
 
 // daysLabel diz quanto falta para o prazo: hoje, amanha, em N dias, atrasada ha N dias

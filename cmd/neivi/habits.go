@@ -127,7 +127,7 @@ func missingLine(db *sql.DB, today time.Time) string {
 			continue
 		}
 		name := h.Code
-		if h.Goal > 1 {
+		if h.Goal > 1 && h.Kind != habit.Weekly { // o semanal falta uma vez no dia (RN-23)
 			name += fmt.Sprintf(" (%d)", h.Goal-done)
 		}
 		missing = append(missing, name)
@@ -173,7 +173,7 @@ func runHabitDo(db *sql.DB, args []string, undo bool, shortcut bool) {
 		if r.Code != "" {
 			h, err := store.GetHabit(db, r.Code)
 			if errors.Is(err, sql.ErrNoRows) && shortcut && len(refs) == 1 {
-				fail(fmt.Errorf("habito %s nao existe (subcomandos: %s; veja os habitos no neivi habit ls)",
+				fail(fmt.Errorf("habito %s nao existe (subcomandos: %s; ajuda: neivi habit -help)",
 					r.Code, strings.Join(habit.Reserved, ", ")))
 			}
 			if errors.Is(err, sql.ErrNoRows) {

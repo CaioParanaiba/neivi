@@ -83,7 +83,7 @@ func TestPaintHelp(t *testing.T) {
 func TestNoColorInPipe(t *testing.T) {
 	c := newCLI(t)
 	c.must("add", "entregar lista pri:A due:hoje")
-	for _, args := range [][]string{{"today"}, {"ls"}, {"show", "1"}, {"help"}, {"help", "add"}} {
+	for _, args := range [][]string{{"today"}, {"ls"}, {"show", "1"}, {"-help"}, {"add", "-help"}} {
 		out, _, _ := c.run("", args...)
 		if strings.Contains(out, "\033") {
 			t.Errorf("neivi %v pintou fora do terminal: %q", args, out)

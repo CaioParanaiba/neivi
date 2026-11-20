@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// helps eh o texto do neivi help <comando> (US-22): o formato e os simbolos de cada comando
+// helps eh o texto do neivi <comando> -help (US-22): o formato e os simbolos de cada comando
 var helps = map[string]string{
 	"add": `uso: neivi add <titulo> [marcas]
 
@@ -25,7 +25,7 @@ exemplos:
 
 	"edit": `uso: neivi edit <id> [titulo novo] [marcas]
 
-  so muda o que aparece; as marcas sao as do add (neivi help add)
+  so muda o que aparece; as marcas sao as do add (neivi add -help)
   -  apaga o campo: pri:-  due:-  est:-  @-  +-  -- -   (o titulo nao pode ser apagado)
 
 exemplos:
@@ -98,7 +98,7 @@ exemplos:
 
 dar prioridade: neivi edit <id> pri:B        ver as incompletas: neivi triage`,
 
-	"show": `uso: neivi show <id>
+	"show": `uso: neivi show <id>   (ou so neivi <id>)
 
   todos os campos de uma tarefa, a situacao e a descricao inteira`,
 
@@ -156,21 +156,21 @@ exemplos:
   neivi habit do lixo ontem`,
 }
 
-// runHelp eh o neivi help [comando]
-func runHelp(args []string) {
-	if len(args) == 0 {
+// runHelp eh o neivi -help (topic vazio) e o neivi <comando> -help (D-39)
+func runHelp(topic string) {
+	if topic == "" {
 		fmt.Print(paintHelp(help))
 		return
 	}
 
-	text, ok := helps[args[0]]
+	text, ok := helps[topic]
 	if !ok {
 		var names []string
 		for k := range helps {
 			names = append(names, k)
 		}
 		sort.Strings(names)
-		fmt.Fprintf(os.Stderr, "erro: comando %s desconhecido (ajuda existe para: %s)\n", args[0], strings.Join(names, ", "))
+		fmt.Fprintf(os.Stderr, "erro: comando %s desconhecido (ajuda existe para: %s)\n", topic, strings.Join(names, ", "))
 		os.Exit(1)
 	}
 

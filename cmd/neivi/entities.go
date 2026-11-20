@@ -279,13 +279,15 @@ func runProject(db *sql.DB, args []string) {
 	case "rm":
 		runProjectRm(db, args[1:])
 	default:
-		// atalho: neivi project mrt = neivi project show mrt (RN-26)
+		// atalho: neivi project mrt = neivi project show mrt (RN-26);
+		// numero vai direto para o show, que ja diz "veja os ids"
 		_, err := findProject(db, args[0])
-		if errors.Is(err, sql.ErrNoRows) {
-			fail(fmt.Errorf("projeto %s nao existe (subcomandos: %s; veja os projetos no neivi project ls)",
+		_, errID := strconv.ParseInt(strings.TrimPrefix(args[0], "+"), 10, 64)
+		if errors.Is(err, sql.ErrNoRows) && errID != nil {
+			fail(fmt.Errorf("projeto %s nao existe (subcomandos: %s; ajuda: neivi project -help)",
 				args[0], strings.Join(project.Reserved, ", ")))
 		}
-		if err != nil {
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			fail(err)
 		}
 		runProjectShow(db, args)
@@ -418,6 +420,9 @@ func getProject(db *sql.DB, args []string, example string) project.Project {
 	}
 
 	p, err := findProject(db, args[0])
+	if _, errID := strconv.ParseInt(strings.TrimPrefix(args[0], "+"), 10, 64); errID == nil && errors.Is(err, sql.ErrNoRows) {
+		fail(fmt.Errorf("projeto %s nao existe (veja os ids no neivi project ls)", args[0]))
+	}
 	if errors.Is(err, sql.ErrNoRows) {
 		fail(fmt.Errorf("projeto %s nao cadastrado (cadastrar: neivi project add %s)", args[0], args[0]))
 	}

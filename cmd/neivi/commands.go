@@ -22,7 +22,7 @@ tarefas:
   today                           o que tem para hoje (tarefas e habitos)
   triage                          tarefas incompletas (sem prioridade)
   ls [filtros] [palavras]         listar tarefas
-  show <id>                       ver todos os campos de uma tarefa
+  show <id>                       ver todos os campos de uma tarefa (ou so <id>)
   edit <id> <texto>               mudar so os campos do texto
   done <id>... [ontem]            concluir tarefas
   reopen <id>...                  reabrir tarefas concluidas
@@ -33,7 +33,8 @@ cadastros:
   project <add|ls|show|edit|rm>   projetos
   habit <add|do|undo|ls|edit|rm>  habitos
 
-detalhes de um comando: neivi help <comando>   (ex.: neivi help add)
+detalhes de um comando: neivi <comando> -help   (ex.: neivi add -help)
+criterio de prioridade: neivi pri -help
 `
 
 func usage() {

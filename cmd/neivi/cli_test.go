@@ -481,11 +481,11 @@ func TestTriage(t *testing.T) {
 		{"CA-08.1 so incompletas, mais antigas primeiro",
 			[][]string{{"add", "comprar", "cabo", "HDMI"}, {"add", "pronta", "pri:B"}, {"add", "ligar"}},
 			[]string{"triage"},
-			"incompletas (2)\nID  P  PRAZO  EST  TAREFA\n1                  comprar cabo HDMI\n3                  ligar\n\ncriterio de prioridade: neivi help pri", ""},
+			"incompletas (2)\nID  P  PRAZO  EST  TAREFA\n1                  comprar cabo HDMI\n3                  ligar\n\ncriterio de prioridade: neivi pri -help", ""},
 		{"CA-08.3 concluida nao aparece",
 			[][]string{{"add", "comprar", "cabo"}, {"add", "ligar"}, {"done", "1"}},
 			[]string{"triage"},
-			"incompletas (1)\nID  P  PRAZO  EST  TAREFA\n2                  ligar\n\ncriterio de prioridade: neivi help pri", ""},
+			"incompletas (1)\nID  P  PRAZO  EST  TAREFA\n2                  ligar\n\ncriterio de prioridade: neivi pri -help", ""},
 		{"CA-08.4 nenhuma", [][]string{{"add", "pronta", "pri:A"}}, []string{"triage"},
 			"nenhuma tarefa incompleta", ""},
 		{"CA-08.5 argumento", nil, []string{"triage", "xyz"},
@@ -1053,16 +1053,30 @@ func TestHelp(t *testing.T) {
 			"subject": "sit:ativa|encerrada", "project": "gh:usuario/repo", "habit": "x2",
 			"pri": "pergunta-teste",
 		} {
-			out, _, code := c.run("", "help", cmd)
+			out, _, code := c.run("", cmd, "-help")
 			if code != 0 || (cmd != "pri" && !strings.HasPrefix(out, "uso: neivi "+cmd)) || !strings.Contains(out, want) {
-				t.Errorf("neivi help %s:\n%s", cmd, out)
+				t.Errorf("neivi %s -help:\n%s", cmd, out)
 			}
+		}
+	})
+
+	t.Run("CA-22.1 -h, --help e depois do subcomando", func(t *testing.T) {
+		c := newCLI(t)
+		want, _, _ := c.run("", "project", "-help")
+		for _, args := range [][]string{{"project", "-h"}, {"project", "--help"}, {"project", "add", "-help"}} {
+			if got, _, _ := c.run("", args...); got != want {
+				t.Errorf("neivi %v diferente de project -help:\n%s", args, got)
+			}
+		}
+		habit, _, _ := c.run("", "habit", "-help")
+		if got, _, _ := c.run("", "habits", "-h"); got != habit {
+			t.Errorf("habits -h diferente de habit -help:\n%s", got)
 		}
 	})
 
 	t.Run("CA-22.2 comando sem ajuda", func(t *testing.T) {
 		c := newCLI(t)
-		_, errOut, code := c.run("", "help", "xyz")
+		_, errOut, code := c.run("", "xyz", "-help")
 		if code == 0 || !strings.HasPrefix(errOut, "erro: comando xyz desconhecido (ajuda existe para: add,") {
 			t.Errorf("erro = %q", errOut)
 		}
@@ -1070,13 +1084,23 @@ func TestHelp(t *testing.T) {
 
 	t.Run("CA-22.3 lista de comandos aponta para a ajuda", func(t *testing.T) {
 		c := newCLI(t)
-		out, _, _ := c.run("", "help")
-		if !strings.HasSuffix(out, "detalhes de um comando: neivi help <comando>   (ex.: neivi help add)") {
-			t.Errorf("neivi help:\n%s", out)
+		out, _, _ := c.run("", "-help")
+		if !strings.HasSuffix(out, "detalhes de um comando: neivi <comando> -help   (ex.: neivi add -help)\ncriterio de prioridade: neivi pri -help") {
+			t.Errorf("neivi -help:\n%s", out)
 		}
-		_, errOut, _ := c.run("", "xyz")
-		if errOut != "erro: comando xyz desconhecido (veja os comandos no neivi help)" {
-			t.Errorf("comando desconhecido: %q", errOut)
+		for _, cmd := range []string{"xyz", "help", "pri"} {
+			_, errOut, code := c.run("", cmd)
+			if code == 0 || errOut != "erro: comando "+cmd+" desconhecido (ajuda: neivi -help)" {
+				t.Errorf("neivi %s: %q", cmd, errOut)
+			}
+		}
+	})
+
+	t.Run("CA-22.5 -help no meio do texto eh texto", func(t *testing.T) {
+		c := newCLI(t)
+		out, errOut, code := c.run("", "add", "revisar", "--", "usar", "-h", "no", "ls")
+		if code != 0 || out != "+ 1 · revisar …" {
+			t.Errorf("add com -h na descricao: %q %q", out, errOut)
 		}
 	})
 
@@ -1101,7 +1125,7 @@ func TestShortcuts(t *testing.T) {
 		{"habit", "add", "lixo", "sem:3"}, // 3
 	}
 
-	t.Run("project mrt, +mrt e 1 = project show mrt", func(t *testing.T) {
+	t.Run("CA-13.4 project mrt, +mrt e 1 = project show mrt", func(t *testing.T) {
 		c := newCLI(t)
 		for _, p := range prep {
 			c.must(p...)
@@ -1123,7 +1147,19 @@ func TestShortcuts(t *testing.T) {
 		}
 	})
 
-	t.Run("grupo sozinho = ls", func(t *testing.T) {
+	t.Run("CA-10.7 neivi <id> = neivi show <id>", func(t *testing.T) {
+		c := newCLI(t)
+		for _, p := range prep {
+			c.must(p...)
+		}
+		want, _, _ := c.run("", "show", "2")
+		got, errOut, code := c.run("", "2")
+		if code != 0 || got != want || !strings.HasPrefix(got, "tarefa 2 · Estudar convex hull") {
+			t.Errorf("neivi 2:\n%s\n%s\nqueria:\n%s", got, errOut, want)
+		}
+	})
+
+	t.Run("CA-13.4 CA-18.9 grupo sozinho = ls", func(t *testing.T) {
 		c := newCLI(t)
 		for _, p := range prep {
 			c.must(p...)
@@ -1142,28 +1178,43 @@ func TestShortcuts(t *testing.T) {
 	})
 
 	runCases(t, prep, []cliCase{
-		{name: "RN-26 projeto que nao existe lista os subcomandos", in: []string{"project", "lss"},
-			wantErr: "erro: projeto lss nao existe (subcomandos: add, ls, show, edit, rm; veja os projetos no neivi project ls)"},
-		{name: "RN-26 codigo de projeto reservado", in: []string{"project", "add", "ls"},
+		{name: "CA-13.5 projeto que nao existe lista os subcomandos", in: []string{"project", "lss"},
+			wantErr: "erro: projeto lss nao existe (subcomandos: add, ls, show, edit, rm; ajuda: neivi project -help)"},
+		{name: "CA-13.3 id de projeto que nao existe", in: []string{"project", "show", "99"},
+			wantErr: "erro: projeto 99 nao existe (veja os ids no neivi project ls)"},
+		{name: "CA-13.3 id de projeto que nao existe pelo atalho", in: []string{"project", "99"},
+			wantErr: "erro: projeto 99 nao existe (veja os ids no neivi project ls)"},
+		{name: "CA-10.7 id que nao existe", in: []string{"99"}, wantErr: "erro: tarefa 99 nao existe (veja os ids no neivi ls)"},
+		{name: "CA-11 RN-26 codigo de projeto reservado", in: []string{"project", "add", "ls"},
 			wantErr: "erro: o codigo ls eh um comando do project (add, ls, show, edit, rm); escolha outro"},
-		{name: "RN-26 codigo de projeto numero", in: []string{"project", "add", "4"},
+		{name: "CA-11 RN-26 codigo de projeto numero", in: []string{"project", "add", "4"},
 			wantErr: "erro: o codigo 4 nao pode ser so um numero (ele se confundiria com o id)"},
-		{name: "RN-26 code: reservado no edit", in: []string{"project", "edit", "mrt", "code:show"},
+		{name: "CA-14 RN-26 code: reservado no edit", in: []string{"project", "edit", "mrt", "code:show"},
 			wantErr: "erro: o codigo show eh um comando do project (add, ls, show, edit, rm); escolha outro"},
-		{name: "RN-26 codigo de habito reservado", in: []string{"habit", "add", "done"},
+		{name: "CA-15 RN-26 codigo de disciplina comeca com numero", in: []string{"subject", "add", "2BD"},
+			wantErr: "erro: o codigo 2BD nao pode comecar com numero"},
+		{name: "CA-15 RN-26 codigo de disciplina reservado", in: []string{"subject", "add", "show"},
+			wantErr: "erro: o codigo show eh um comando do subject (add, ls, show, edit, rm); escolha outro"},
+		{name: "CA-15 RN-26 code: de disciplina no edit", in: []string{"subject", "edit", "BD", "code:1BD"},
+			wantErr: "erro: o codigo 1BD nao pode comecar com numero"},
+		{name: "CA-11 RN-26 codigo de projeto comeca com numero", in: []string{"project", "add", "2p"},
+			wantErr: "erro: o codigo 2p nao pode comecar com numero"},
+		{name: "CA-17.3 codigo de habito comeca com numero", in: []string{"habit", "add", "1cf"},
+			wantErr: "erro: o codigo 1cf nao pode comecar com numero"},
+		{name: "CA-17.3 codigo de habito reservado", in: []string{"habit", "add", "done"},
 			wantErr: "erro: o codigo done eh um comando do habit (add, do, done, undo, ls, edit, rm); escolha outro"},
 
-		{name: "RN-26 habit digi = habit do digi", in: []string{"habit", "digi"},
-			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo (3)"},
-		{name: "RN-26 habit pelo id", in: []string{"habit", "1"},
-			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo (3)"},
-		{name: "RN-26 habit done = habit do", in: []string{"habit", "done", "digi"},
-			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo (3)"},
-		{name: "RN-26 habito que nao existe lista os subcomandos", in: []string{"habit", "lss"},
-			wantErr: "erro: habito lss nao existe (subcomandos: add, do, done, undo, ls, edit, rm; veja os habitos no neivi habit ls)"},
+		{name: "CA-18.9 habit digi = habit do digi", in: []string{"habit", "digi"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo"},
+		{name: "CA-18.9 habit pelo id", in: []string{"habit", "1"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo"},
+		{name: "CA-18.9 habit done = habit do", in: []string{"habit", "done", "digi"},
+			wantOut: "✓ digi · feito hoje\nfaltam hoje: cf (3), lixo"},
+		{name: "CA-18.11 habito que nao existe lista os subcomandos", in: []string{"habit", "lss"},
+			wantErr: "erro: habito lss nao existe (subcomandos: add, do, done, undo, ls, edit, rm; ajuda: neivi habit -help)"},
 	})
 
-	t.Run("RN-26 atalho nao marca o que ja esta feito no dia", func(t *testing.T) {
+	t.Run("CA-18.10 atalho nao marca o que ja esta feito no dia", func(t *testing.T) {
 		c := newCLI(t)
 		for _, p := range prep {
 			c.must(p...)
@@ -1186,7 +1237,7 @@ func TestShortcuts(t *testing.T) {
 		}
 	})
 
-	t.Run("RN-23 semanal feito hoje sai do today", func(t *testing.T) {
+	t.Run("CA-19.3 semanal feito hoje sai do today", func(t *testing.T) {
 		c := newCLI(t)
 		for _, p := range prep {
 			c.must(p...)
@@ -1236,16 +1287,25 @@ func TestTodayTomorrow(t *testing.T) {
 	out, errOut, _ := c.run("", "today")
 	check(t, out, errOut, want, "")
 
-	t.Run("so amanha e projetos", func(t *testing.T) {
+	t.Run("CA-07.6 dia livre com amanha: a frase e o amanha como sugestao", func(t *testing.T) {
 		c.must("done", "2")
 		out, _, _ := c.run("", "today")
-		if !strings.Contains(out, label+" (1)") || !strings.Contains(out, "falta: nada para hoje") ||
-			!strings.Contains(out, "+ 3 de projetos") {
-			t.Errorf("queria o bloco %s, falta: nada para hoje e a linha dos projetos:\n%s", label, out)
+		var tb table
+		r := []string{"1", "B", dia(1), "2h", "revisao em grupo"}
+		tb.fit(header(false))
+		tb.fit(r)
+		want := strings.Join([]string{
+			"nada para hoje, bom trabalho!", "",
+			label + " (1)", tb.line(header(false)), tb.line(r),
+			"+ 3 de projetos (p1: 2, mrt: 1) · neivi project show <codigo>", "",
+			"hoje: 1 concluidas",
+		}, "\n")
+		if out != want {
+			t.Errorf("today:\n%s\nqueria:\n%s", out, want)
 		}
 	})
 
-	t.Run("so projetos: dia livre com a linha", func(t *testing.T) {
+	t.Run("CA-07.12 so projetos: dia livre com a linha", func(t *testing.T) {
 		c.must("done", "1")
 		out, _, _ := c.run("", "today")
 		want := "nada para hoje, bom trabalho!\n+ 3 de projetos (p1: 2, mrt: 1) · neivi project show <codigo>\nhoje: 2 concluidas"
