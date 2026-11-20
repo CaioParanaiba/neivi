@@ -1,6 +1,6 @@
 # Requisitos do Neivi
 
-Cobre: v0.1 · Versao do doc: 0.5 · 2026-11-11
+Cobre: v0.1 · Versao do doc: 0.6 · 2026-11-18
 
 | Versao    | data          | Mudanca                   |
 |-----------|---------------|---------------------------|
@@ -9,6 +9,7 @@ Cobre: v0.1 · Versao do doc: 0.5 · 2026-11-11
 | 0.3       | 2026-11-09    | Contexto completo (2.2 e 2.3) |
 | 0.4       | 2026-11-09    | Revisao contra o SPEC: escopo, glossario e decisoes D-22 a D-32; 1 e 2 fechados |
 | 0.5       | 2026-11-11    | Fatia 1 (tarefas) fechada: US-01 a US-06, RN-01 a RN-15, RNF-01 a RNF-05, modelo conceitual, D-33 e rastreabilidade |
+| 0.6       | 2026-11-18    | Semana de uso real: RN-26, RN-16/17/23/25 revistas, US-07, US-10, US-13, US-17 a US-19 e US-22 com CAs novos, D-39 |
 
 # 1. Introducao
 
@@ -516,7 +517,7 @@ Prioridade: Must · Fatia: 1 · Cenarios: C8, C2 · Regras: RN-01, RN-12, RN-13
 Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
 
 **Como** eu, ao ligar o PC (C1) e ao longo do dia, depois de concluir uma tarefa (C4),
-**quero** ver de uma vez o que tem para hoje (atrasadas, urgentes e importantes), com o tempo estimado do que falta,
+**quero** ver de uma vez o que tem para hoje (atrasadas, urgentes e importantes) e o que vence amanha, com o tempo estimado do que falta,
 **para** me preparar para o dia em ~1 min e escolher a proxima tarefa sem montar filtro.
 
 **Criterios de aceitacao** (hoje = qua 11/11/2026; 3 tarefas ja concluidas hoje)
@@ -545,7 +546,7 @@ Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
 
   (cada grupo eh uma tabela com o proprio cabecalho; as colunas tem a mesma largura em todos os grupos)
 
-  (a 9 nao aparece porque ha A sem prazo; a 10 so aparece no dia dela ou quando atrasar; concluidas nunca aparecem)
+  (a 9 nao aparece porque ha A sem prazo; a 10, de sexta, aparece no bloco amanha na quinta, e no ate segunda a partir de sexta; concluidas nunca aparecem)
 - **CA-07.2** *(limite, sem A sem prazo)* Dado que nao ha nenhuma A sem prazo e ha as B sem prazo 9 `estudar sorting` e 12 `levantamento de notebook`,
   entao o bloco 3 vira `sem prazo (2)` com as duas (RN-16).
 - **CA-07.3** *(limite, incompleta com prazo hoje)* Dado 13 `pagar aluguel due:hoje` sem prioridade,
@@ -556,12 +557,16 @@ Prioridade: Must · Fatia: 4 · Cenarios: C1, C4 · Regras: RN-14, RN-16, RN-17
   entao o bloco `atrasadas` nao aparece.
 - **CA-07.6** *(estado, dia livre)* Dado que nada se encaixa nos tres blocos e nao ha incompletas,
   entao aparece `nada para hoje, bom trabalho!` e `hoje: 3 concluidas`.
+  Com tarefas para amanha, a frase vem primeiro e o bloco amanha depois, como sugestao do que adiantar; sem `falta:`.
 - **CA-07.7** *(estado, dia livre com incompletas)* Dado que nada se encaixa nos tres blocos e ha 4 incompletas,
   entao aparece `nada para hoje, bom trabalho!`, `voce tem 4 tarefas incompletas: que tal completar? (neivi triage)` e `hoje: 3 concluidas`.
 - **CA-07.8** *(limite, EST)* Dado que nenhuma tarefa mostrada tem EST,
   entao aparece `falta: sem EST (3 tarefas)` no lugar da soma.
 - **CA-07.9** *(entrada invalida)* Quando registro `neivi today xyz`,
   entao aparece `erro: today nao recebe argumentos (exemplo: neivi today)`.
+- **CA-07.10** *(caminho feliz, amanha)* Numa quarta, com 1 `revisao em grupo pri:B due:amanha est:2h` e 2 `estudar POO pri:B est:30m`: blocos `amanha (1)` e `sem prazo (1)`, e `falta: ~30m` (o amanha nao entra).
+- **CA-07.11** *(limite, fim de semana)* Na sexta, no sabado e no domingo, o bloco se chama `ate segunda` e mostra os prazos ate a segunda.
+- **CA-07.12** *(limite, projetos)* Com 2 B sem prazo do `p1` e 1 C do `mrt`, elas nao aparecem no `sem prazo` e sim na linha `+ 3 de projetos (p1: 2, mrt: 1) · neivi project show <codigo>`. Uma A sem prazo de projeto aparece em `importantes`; uma de projeto com prazo hoje, em `urgentes`.
 
 **Notas:** o contador aparece sempre, mesmo `hoje: 0 concluidas`. Os habitos que faltam hoje aparecem no fim (US-19, CA-19.1).
 
@@ -585,7 +590,7 @@ Prioridade: Must · Fatia: 4 · Cenarios: C8 · Regras: RN-02, RN-17
       9                      ligar
       12     sex 13/11       pagar aluguel
 
-  No fim, depois de uma linha em branco: `criterio de prioridade: neivi help pri`.
+  No fim, depois de uma linha em branco: `criterio de prioridade: neivi pri -help`.
 - **CA-08.2** *(caminho feliz, alternativa)* `neivi ls pri:-` mostra as mesmas tarefas (story do ls).
 - **CA-08.3** *(limite)* Dado a incompleta 4 concluida, entao ela nao aparece.
 - **CA-08.4** *(estado)* Dado que nao ha incompletas, entao aparece `nenhuma tarefa incompleta`.
@@ -691,6 +696,8 @@ Prioridade: Must · Fatia: 4 · Cenarios: C4, C9 · Regras: RN-02, RN-14
   | `neivi show`       | `erro: falta o id da tarefa (exemplo: neivi show 2)` |
   | `neivi show 2 3`   | `erro: show mostra uma tarefa por vez (exemplo: neivi show 2)` |
 
+- **CA-10.7** *(caminho feliz, atalho)* `neivi 211` mostra o mesmo que `neivi show 211` (RN-26); id que nao existe da o mesmo erro do show.
+
 **Notas:** o formato pode mudar com o uso.
 
 ---
@@ -776,10 +783,12 @@ Prioridade: Must · Fatia: 2 · Cenarios: C9 · Regras: RN-14, RN-17, RN-20, RN-
 
       pendentes (5)
       ID  P  PRAZO      EST  TAREFA
-      ... (tabela das pendentes do projeto, na ordem padrao)
+      ... (tabela das pendentes do projeto, por prioridade -> prazo -> id (RN-17), para as tarefas de um tema ficarem juntas)
 
 - **CA-13.2** *(limite)* Academico: `disciplina:  BD (academico)`; continuo: `progresso:   continuo · 12 pendentes`; sem tarefas: `progresso:   -  (sem tarefas)`, `ultima:      -` e `nenhuma tarefa pendente`; campos vazios como `-`; sem descricao, sem o paragrafo.
-- **CA-13.3** *(entrada invalida)* `neivi project show xx`: `erro: projeto xx nao cadastrado (cadastrar: neivi project add xx)`; `neivi project show`: `erro: falta o codigo do projeto (exemplo: neivi project show neivi)`.
+- **CA-13.3** *(entrada invalida)* `neivi project show xx`: `erro: projeto xx nao cadastrado (cadastrar: neivi project add xx)`; `neivi project show 99` (id): `erro: projeto 99 nao existe (veja os ids no neivi project ls)`; `neivi project show`: `erro: falta o codigo do projeto (exemplo: neivi project show neivi)`.
+- **CA-13.4** *(caminho feliz, atalho)* `neivi project mrt`, `neivi project +mrt`, `neivi project 3` e `neivi project show 3` mostram o mesmo que `neivi project show mrt` (RN-26); `neivi project` sozinho = `neivi project ls`.
+- **CA-13.5** *(entrada invalida, atalho)* `neivi project lss`: `erro: projeto lss nao existe (subcomandos: add, ls, show, edit, rm; ajuda: neivi project -help)`.
 
 ---
 
@@ -865,6 +874,8 @@ Prioridade: Must · Fatia: 3 · Cenarios: C5, C11 · Regras: RN-23, RN-25
   | `neivi habit add`                  | `erro: falta o codigo do habito (exemplo: neivi habit add digi Treino de digitacao)` |
   | `neivi habit add 3 x`              | `erro: o codigo 3 nao pode ser so um numero (ele se confundiria com o id)` |
   | `neivi habit add x2`               | `erro: o codigo x2 nao pode ser x seguido de numero (ele se confundiria com a quantidade)` |
+  | `neivi habit add 1cf`              | `erro: o codigo 1cf nao pode comecar com numero` (RN-26) |
+  | `neivi habit add done`             | `erro: o codigo done eh um comando do habit (add, do, done, undo, ls, edit, rm); escolha outro` (RN-26) |
   | `neivi habit add cf` (ja existe)   | `erro: ja existe um habito cf (para mudar: neivi habit edit cf)` |
   | `neivi habit add x sem:3 dias:seg` | `erro: use sem: ou dias:, nao os dois` |
   | `neivi habit add x sem:3 meta:2`   | `erro: no sem: o numero ja eh a meta da semana (use so sem:3)` |
@@ -887,9 +898,9 @@ Prioridade: Must · Fatia: 3 · Cenarios: C5, C11 · Regras: RN-11, RN-12, RN-23
       ✓ cf · 2/3 hoje
       ✓ lixo · 2/3 nesta semana
       ✓ neivi · feito hoje
-      faltam hoje: digi, cf (1), lixo (1), soneca
+      faltam hoje: digi, cf (1), soneca
 
-  (o lixo ainda falta: semanal aparece ate bater a meta da semana, RN-23; ordem pelo id)
+  (o lixo some: o semanal feito hoje so volta amanha, RN-23; ordem pelo id)
 
 - **CA-18.2** *(caminho feliz, id)* `neivi habit do 1` marca o digi, igual a `neivi habit do digi`.
 - **CA-18.3** *(caminho feliz, ontem)* `neivi habit do lixo neivi ontem` marca os dois em 10/11, com `(ontem)` em cada linha; o `ontem` vale para todos do comando (RN-24).
@@ -906,6 +917,10 @@ Prioridade: Must · Fatia: 3 · Cenarios: C5, C11 · Regras: RN-11, RN-12, RN-23
   | `neivi habit do x2 cf`      | nada eh marcado; `erro: x2 precisa vir depois de um habito (exemplo: neivi habit do cf x2)` |
   | `neivi habit do cf x0`      | nada eh marcado; `erro: quantidade x0 invalida (use x1, x2...)` |
   | `neivi habit do`            | `erro: falta o habito (exemplo: neivi habit do cf x2 lixo)` |
+
+- **CA-18.9** *(caminho feliz, atalho)* `neivi habit digi` = `neivi habit do digi`, pelo codigo ou pelo id (RN-26); `neivi habit done digi` = `neivi habit do digi`; `habits` = `habit`; `neivi habit` sozinho = `neivi habit ls`.
+- **CA-18.10** *(estado, atalho)* Com digi e lixo feitos hoje e cf em 1/3, `neivi habit digi lixo cf` marca so o cf (`✓ cf · 2/3 hoje`) e avisa `aviso: digi ja feito hoje (para marcar de novo: neivi habit do digi)`, e o mesmo para o lixo. O `habit do` explicito continua marcando de novo.
+- **CA-18.11** *(entrada invalida, atalho)* `neivi habit lss`: `erro: habito lss nao existe (subcomandos: add, do, done, undo, ls, edit, rm; ajuda: neivi habit -help)`.
 
 ---
 
@@ -937,7 +952,7 @@ Prioridade: Must · Fatia: 3 · Cenarios: C5, C11, C1 · Regras: RN-23
       5   neivi   todo dia        ✓              Brincar com a Neivi
 
   Num dia que nao eh dele, um habito de dias especificos mostra `-` em FEITO.
-- **CA-19.3** *(limite, semana)* O "N por semana" conta de domingo a sabado (D-19): no domingo volta a 0/N; ate bater a meta, aparece todo dia no today.
+- **CA-19.3** *(limite, semana)* O "N por semana" conta de domingo a sabado (D-19): no domingo volta a 0/N; ate bater a meta, aparece no today todo dia em que ainda nao foi feito (RN-23).
 - **CA-19.4** *(limite, dias especificos)* So aparece no today nos seus dias.
 - **CA-19.5** *(caminho feliz, arquivados)* `neivi habit ls all` mostra tambem os arquivados, depois, com a coluna SITUACAO.
 - **CA-19.6** *(estado)* Sem habitos: `nenhum habito (cadastrar: neivi habit add codigo nome)`.
@@ -991,13 +1006,13 @@ Prioridade: Should · Fatia: — (antes do corte) · Cenarios: C2, C5, C8 · Reg
 **para** nao precisar abrir o SPEC nem adivinhar.
 
 **Criterios de aceitacao**
-- **CA-22.1** *(caminho feliz)* `neivi help add` mostra o uso, as marcas com o significado e exemplos; o mesmo para todo comando da lista (add, today, triage, ls, show, edit, done, reopen, rm, subject, project, habit).
-- **CA-22.2** *(entrada invalida)* `neivi help xyz` mostra `erro: comando xyz desconhecido (ajuda existe para: add, done, ...)`.
-- **CA-22.3** *(caminho feliz)* `neivi help` (e `neivi` sozinho) mostra a lista de comandos e termina com `detalhes de um comando: neivi help <comando>`; um comando desconhecido mostra `erro: comando xyz desconhecido (veja os comandos no neivi help)`.
+- **CA-22.1** *(caminho feliz)* `neivi add -help` (tambem `-h` e `--help`) mostra o uso, as marcas com o significado e exemplos; o mesmo para todo comando da lista (add, today, triage, ls, show, edit, done, reopen, rm, subject, project, habit). Vale so como primeira palavra depois do comando ou do subcomando: `neivi project -help` e `neivi project add -help` mostram a ajuda do project.
+- **CA-22.2** *(entrada invalida)* `neivi xyz -help` mostra `erro: comando xyz desconhecido (ajuda existe para: add, done, ...)`.
+- **CA-22.3** *(caminho feliz)* `neivi -help` (e `neivi` sozinho) mostra a lista de comandos e termina com `detalhes de um comando: neivi <comando> -help` e `criterio de prioridade: neivi pri -help`; um comando desconhecido mostra `erro: comando xyz desconhecido (ajuda: neivi -help)`, inclusive `neivi help` (um jeito so, D-39).
+- **CA-22.4** *(caminho feliz)* `neivi pri -help` mostra o criterio de prioridade da RN-15 numa tabela: o nivel, a definicao e a pergunta-teste, mais como dar prioridade (`neivi edit <id> pri:B`). `pri` eh topico de ajuda, nao comando: `neivi pri` sozinho eh comando desconhecido.
+- **CA-22.5** *(limite)* `-help` no meio do texto eh texto: `neivi add revisar -- usar -h no ls` cria a tarefa.
 
-- **CA-22.4** *(caminho feliz)* `neivi help pri` mostra o criterio de prioridade da RN-15 numa tabela: o nivel, a definicao e a pergunta-teste, mais como dar prioridade (`neivi edit <id> pri:B`).
-
-**Notas:** `neivi add -help` nao serve, porque no add e no edit tudo depois do comando eh a tarefa (`-help` viraria titulo). A dica "(ajuda: neivi help add)" no fim de cada erro ficou de fora para nao mudar o texto dos criterios ja aprovados; entra se fizer falta no uso.
+**Notas:** a dica "(ajuda: neivi <comando> -help)" no fim de cada erro so entrou nos erros de grupo (CA-13.5); nos outros, entra se fizer falta no uso.
 
 ---
 
@@ -1045,9 +1060,9 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 
   Fonte: Q-14 · Usada em: US-02, US-03
 
-- **RN-16** Resumo diario: tres blocos de tarefas pendentes, nesta ordem: atrasadas (prazo antes de hoje), urgentes (prazo hoje, qualquer prioridade, inclusive sem prioridade) e importantes (prioridade A sem prazo). Se nao ha nenhuma A sem prazo, o terceiro bloco vira "sem prazo" e mostra todas do nivel mais alto que existir entre as sem prazo (B, senao C, senao D). Incompleta sem prazo nunca aparece. Bloco vazio nao aparece; se os tres estao vazios, "nada para hoje" (com a dica do triage se houver incompletas).
-  Fonte: D-27, CA-07.1 a CA-07.7 · Usada em: US-07
-- **RN-17** Ordenacao: no resumo diario, prazo (mais antigo primeiro) -> prioridade (A a D, sem prioridade por ultimo) -> EST (mais rapidas primeiro, sem EST por ultimo) -> id. Na listagem padrao, prioridade -> prazo -> EST -> id. No triage, data de criacao (mais antiga primeiro) -> id.
+- **RN-16** Resumo diario: blocos de tarefas pendentes, nesta ordem: atrasadas (prazo antes de hoje), urgentes (prazo hoje, qualquer prioridade, inclusive sem prioridade), amanha (prazo amanha; na sexta, no sabado e no domingo vira "ate segunda" e vai ate a segunda) e importantes (prioridade A sem prazo). Se nao ha nenhuma A sem prazo, o ultimo bloco vira "sem prazo" e mostra todas do nivel mais alto que existir entre as sem prazo (B, senao C, senao D). Sem prazo de projeto ficam fora do ultimo bloco, menos as A (o projeto tem horario proprio): aparecem so numa linha `+ N de projetos (p1: 4, mrt: 2) · neivi project show <codigo>`. Incompleta sem prazo nunca aparece. O `falta:` soma so o que eh de hoje (o amanha nao entra). Bloco vazio nao aparece; sem nada para hoje, "nada para hoje" (com a dica do triage se houver incompletas), seguido do amanha, se houver.
+  Fonte: D-27, CA-07.1 a CA-07.7, triagem da semana de uso (18/11), CA-07.10 a CA-07.12 · Usada em: US-07
+- **RN-17** Ordenacao: no resumo diario, prazo (mais antigo primeiro) -> prioridade (A a D, sem prioridade por ultimo) -> EST (mais rapidas primeiro, sem EST por ultimo) -> id. Na listagem padrao, prioridade -> prazo -> EST -> id. Na ficha do projeto, prioridade -> prazo -> id (sem a EST, para as tarefas de um tema ficarem juntas). No triage, data de criacao (mais antiga primeiro) -> id.
   Fonte: D-04, D-28, US-08 · Usada em: US-07, US-08, US-09
 - **RN-18** Filtros da listagem: `@codigo`, `+codigo`, `pri:X` escolhem; `@` e `+` sozinhos = qualquer disciplina / qualquer projeto; `@-`, `+-`, `pri:-` = sem. Disciplina usa a disciplina efetiva (RN-14). `new` = criadas hoje ou ontem (D-11); `late` = atrasadas. Filtros do mesmo tipo sao "ou"; de tipos diferentes, "e". Outras palavras buscam no titulo: todas precisam aparecer, ignorando maiusculas e acentos. Palavras reservadas (`all`, `done`, `late`, `new`, `due`, `desc`) nao entram na busca.
   Fonte: decisoes de 04/11 (SPEC 5), D-11, US-09 · Usada em: US-08, US-09
@@ -1061,12 +1076,14 @@ Regras que valem para qualquer comando ou tela. Cada uma diz de onde veio (Fonte
 - **RN-22** So da para remover disciplina ou projeto sem nada ligado (tarefas, e para disciplina, projetos); sempre com `[s/N]`. Com coisas ligadas, recusa e sugere encerrar ou cancelar.
   Fonte: FK (31/10), US-16 · Usada em: US-16
 
-- **RN-23** Periodicidade e meta do habito: todo dia (meta por dia, padrao 1), dias especificos (meta por dia, so nesses dias) ou N por semana (a meta eh N na semana, somando os registros; semana de domingo a sabado, D-19). Um habito "falta hoje" enquanto nao bateu a meta do periodo e, se for de dias especificos, so se hoje for um dos dias.
+- **RN-23** Periodicidade e meta do habito: todo dia (meta por dia, padrao 1), dias especificos (meta por dia, so nesses dias) ou N por semana (a meta eh N na semana, somando os registros; semana de domingo a sabado, D-19). Um habito "falta hoje" enquanto nao bateu a meta do periodo e, se for de dias especificos, so se hoje for um dos dias. No "N por semana", o dia em que ja teve registro conta como feito: o habito sai do today e do `faltam hoje` e volta no dia seguinte, enquanto a semana nao bate a meta. No `faltam hoje` ele aparece sem numero (falta uma vez no dia).
   Fonte: D-02, D-08, D-12, D-19, US-17, US-19 · Usada em: US-17 a US-21
 - **RN-24** Registro de habito: soma a quantidade (padrao 1) no dia, hoje ou ontem (D-21); `ontem` vale para todos do comando; pode passar da meta (D-12); fora do dia ou arquivado, registra com aviso. O undo subtrai e nunca deixa negativo.
   Fonte: D-12, D-21, US-18, US-20 · Usada em: US-18, US-20
-- **RN-25** Codigo do habito: unico, nunca so numero, nunca `x` seguido de numero. O habito pode ser apontado pelo id ou pelo codigo. Na quantidade, `x2` vale para o habito logo antes.
-  Fonte: US-17, US-18 · Usada em: US-17, US-18, US-20, US-21
+- **RN-25** Codigo do habito: unico, nunca `x` seguido de numero; o resto do formato segue a RN-26. O habito pode ser apontado pelo id ou pelo codigo. Na quantidade, `x2` vale para o habito logo antes.
+
+- **RN-26** Codigos e atalhos. O codigo de disciplina, projeto ou habito nunca comeca com numero (entao tambem nunca eh so numero, que se confundiria com o id) e nunca eh nome de subcomando do grupo: disciplina (add, ls, show, edit, rm), projeto (add, ls, show, edit, rm), habito (add, do, done, undo, ls, edit, rm). Vale no add e no `code:` do edit. O grupo sozinho mostra a lista (`neivi project` = `neivi project ls`). `neivi <grupo> <codigo|id>` faz a acao principal do grupo: projeto = show (aceita tambem `+codigo`), habito = do (sem marcar o que ja esta feito no dia); disciplina ainda nao tem atalho. Tarefa: `neivi <id>` = `neivi show <id>`. Codigo que nao existe recusa, listando os subcomandos e a ajuda (`neivi project -help`).
+  Fonte: triagem da semana de uso (18/11) · Usada em: US-10, US-13, US-15, US-17, US-18
 
 # 5. Requisitos nao funcionais
 
@@ -1256,25 +1273,25 @@ Cada criterio aponta para o teste que o confere (`go test ./...`). Os nomes dos 
 | US-05 | CA-05.1 a 05.4 | `cmd/neivi`: TestReopen, TestParseIDs; `internal/store`: TestReopenTask |
 | US-06 | CA-06.1 a 06.5 | `cmd/neivi`: TestRm; `internal/store`: TestRmTask |
 
-| US-07 | CA-07.1 a CA-07.9 | `cmd/neivi`: TestToday (07.1, 07.2, 07.3, 07.6 a 07.9); `internal/task`: TestToday (07.1 a 07.6), TestIsNewIsLate |
+| US-07 | CA-07.1 a CA-07.12 | `cmd/neivi`: TestToday (07.1, 07.2, 07.3, 07.6 a 07.9), TestTodayTomorrow (07.6, 07.10 a 07.12); `internal/task`: TestToday (07.1 a 07.6), TestIsNewIsLate, TestTomorrowEnd (07.11), TestTodayTomorrowAndProjects (07.10, 07.12) |
 | US-08 | CA-08.1 a CA-08.5 | `cmd/neivi`: TestTriage; `internal/task`: TestSorts (08.1); `internal/store`: TestListTasksFilter (08.2) |
 | US-09 | CA-09.1 a CA-09.9 | `cmd/neivi`: TestLs; `internal/store`: TestListTasksFilter (09.1 a 09.5); `internal/task`: TestSorts (09.1, 09.5, 09.7), TestMatchWords (09.4), TestFilterIsEmpty (09.8); `internal/todotxt`: TestParseFilter |
-| US-10 | CA-10.1 a CA-10.6 | `cmd/neivi`: TestShow, TestDaysLabel (10.1, 10.3), TestCodeName (10.1) |
+| US-10 | CA-10.1 a CA-10.7 | `cmd/neivi`: TestShow, TestDaysLabel (10.1, 10.3), TestCodeName (10.1), TestShortcuts (10.7) |
 
 | US-11 | CA-11.1 a CA-11.7 | `cmd/neivi`: TestProject; `internal/todotxt`: TestParseProject; `internal/project`: TestStatus |
 | US-12 | CA-12.1 a CA-12.4 | `cmd/neivi`: TestProject; `internal/project`: TestProgress; `internal/store`: TestProjectsAndSubjects |
-| US-13 | CA-13.1 a CA-13.3 | `cmd/neivi`: TestProject; `internal/store`: TestProjectsAndSubjects (13.1) |
+| US-13 | CA-13.1 a CA-13.5 | `cmd/neivi`: TestProject, TestShortcuts (13.1, 13.3 a 13.5); `internal/store`: TestProjectsAndSubjects (13.1); `internal/task`: TestSortPlan (13.1) |
 | US-14 | CA-14.1 a CA-14.4 | `cmd/neivi`: TestProject; `internal/todotxt`: TestParseProject |
 | US-15 | CA-15.1 a CA-15.4 | `cmd/neivi`: TestSubject; `internal/todotxt`: TestParseSubject; `internal/store`: TestProjectsAndSubjects |
 | US-16 | CA-16.1 a CA-16.3 | `cmd/neivi`: TestProject, TestSubject; `internal/store`: TestProjectsAndSubjects |
 | US-02, US-03 | CA-02.7, CA-03.8 | `cmd/neivi`: TestProject |
 | US-10 | CA-10.5 | `cmd/neivi`: TestProject; `internal/store`: TestProjectsAndSubjects |
-| US-17 | CA-17.1 a CA-17.3 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabit; `internal/habit`: TestLabels, TestValidCode, TestDays |
-| US-18 | CA-18.1 a CA-18.8 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabitRefs; `internal/habit`: TestLabels, TestMissing; `internal/store`: TestHabitLogs (18.1) |
-| US-19 | CA-19.1 a CA-19.6 | `cmd/neivi`: TestHabit; `internal/habit`: TestWeekStart, TestPeriod, TestMissing, TestLabels; `internal/store`: TestHabitLogs (19.3, 19.5) |
+| US-17 | CA-17.1 a CA-17.3 | `cmd/neivi`: TestHabit, TestShortcuts (17.3); `internal/todotxt`: TestParseHabit; `internal/habit`: TestLabels, TestValidCode, TestDays; `internal/codes`: TestCheck (RN-26) |
+| US-18 | CA-18.1 a CA-18.11 | `cmd/neivi`: TestHabit, TestShortcuts (18.9 a 18.11); `internal/todotxt`: TestParseHabitRefs; `internal/habit`: TestLabels, TestMissing; `internal/store`: TestHabitLogs (18.1) |
+| US-19 | CA-19.1 a CA-19.6 | `cmd/neivi`: TestHabit, TestShortcuts (19.3); `internal/habit`: TestWeekStart, TestPeriod, TestMissing, TestLabels; `internal/store`: TestHabitLogs (19.3, 19.5) |
 | US-20 | CA-20.1 a CA-20.4 | `cmd/neivi`: TestHabit; `internal/store`: TestHabitLogs |
 | US-21 | CA-21.1 a CA-21.6 | `cmd/neivi`: TestHabit; `internal/todotxt`: TestParseHabit |
-| US-22 | CA-22.1 a CA-22.4 | `cmd/neivi`: TestHelp |
+| US-22 | CA-22.1 a CA-22.5 | `cmd/neivi`: TestHelp, TestNoColorInPipe |
 
 Os criterios que dependem do dia da semana (semana de domingo a sabado, dias especificos) sao conferidos em `internal/habit` com datas fixas; os de ponta a ponta usam dias relativos a hoje.
 
@@ -1289,3 +1306,5 @@ Os testes do `cmd/neivi` rodam o binario de verdade, com um banco temporario por
   Porque: com pressa eu lembro do codigo, e as vezes do id da lista; marcar errado acontece; e parar um habito nao pode apagar o historico.
 - **D-38** Importacao do Ganbatte: o mapeamento do UC-01 (disciplinas, os projetos mrt, p1 e ganbatte, as pendentes da limpeza sem prazo nos projetos pessoais, o done.txt inteiro, os habitos com o historico, o resto das marcas na descricao). Q-17 e Q-18 resolvidas.
   Porque: a limpeza ja tirou o que nao serve; o historico e os habitos mantem a motivacao e as estatisticas; projeto pessoal sem prazo nao comeca o neivi com atrasadas.
+- **D-39** Ajuda por `-h`, `-help` ou `--help` como primeira palavra depois do comando, em todo comando; o `neivi help` sai (um jeito so). Flags continuam vetadas para opcoes; a ajuda eh a unica excecao, revisavel se o uso pedir.
+  Porque: quando erro um comando, o reflexo eh pedir ajuda ao proprio comando, como em qualquer programa do terminal; dois jeitos (help e -help) seriam redundantes.
